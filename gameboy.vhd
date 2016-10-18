@@ -4,7 +4,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity gameboy is  
+entity gameboy is
   port(CLOCK_50  : in std_logic;
        VGA_R : out std_logic_VECTOR (7 downto 0);
        VGA_G : out std_logic_VECTOR (7 downto 0);
@@ -20,6 +20,7 @@ end gameboy;
 architecture Behavioral of gameboy is
 
 signal clk25              : std_logic;  
+signal clk50              : std_logic;  
 signal outbyte : std_logic_vector (7 downto 0);
 signal nullsig :  STD_LOGIC_VECTOR (7 DOWNTO 0);
 	signal myrow     : integer;
@@ -60,29 +61,26 @@ COMPONENT vga_controller
 		row : OUT INTEGER
 		);
 	END COMPONENT;
+	
+COMPONENT pll
+	PORT
+	(
+		refclk		:	 IN STD_LOGIC;
+		rst		:	 IN STD_LOGIC;
+		outclk_0		:	 OUT STD_LOGIC;
+		outclk_1		:	 OUT STD_LOGIC
+	);
+END COMPONENT;
 
 begin
 VGA_CLK <= clk25;
 VGA_BLANK_N <='1' ;
 VGA_SYNC_N <= '0';
--- generate a 25Mhz clock
-process (CLOCK_50)  
-begin
-  
-  
-  if CLOCK_50'event and CLOCK_50='1' then
-    if (clk25 = '0') then
-      clk25 <= '1';
-    else
-      clk25 <= '0';
-    end if;
-  end if;
-end process;
 
 process (clk25)  
 begin  
   LEDR (7 downto 0) <= outbyte;
-  if clk25'event and clk25 = '1' then
+  if rising_edge(clk25) then
     if dispen='1' then
 
      --here you paint!!
@@ -98,7 +96,13 @@ begin
   end if;
 end process;
 
-
+pll_inst : pll PORT MAP (
+  refclk => CLOCK_50,
+  rst => '0',
+  outclk_0 => clk50,
+  outclk_1 => clk25
+);
+    
 
 memoryfirst_inst : memoryfirst PORT MAP (
 		data	 => "00000000",
