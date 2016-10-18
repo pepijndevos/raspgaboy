@@ -1,7 +1,5 @@
 library IEEE;  
 use IEEE.STD_LOGIC_1164.ALL;  
---use IEEE.STD_LOGIC_ARITH.ALL;  
---use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity gameboy is
@@ -23,9 +21,10 @@ signal clk25              : std_logic;
 signal clk50              : std_logic;  
 signal outbyte : std_logic_vector (7 downto 0);
 signal nullsig :  STD_LOGIC_VECTOR (7 DOWNTO 0);
-	signal myrow     : integer;
-	signal col     : integer;
-	signal dispen  : std_logic;
+signal myrow     : integer;
+signal col     : integer;
+signal dispen  : std_logic;
+
 component memoryfirst
 	PORT
 	(
@@ -72,6 +71,21 @@ COMPONENT pll
 	);
 END COMPONENT;
 
+COMPONENT tilemap is
+  generic(xoffset : integer := 100;
+          yoffset : integer := 0;
+			 screen_width : integer := 160;
+			 screen_height : integer := 144);
+  port(clk     : in std_logic;
+       rst     : in std_logic;
+		 memaddr : out std_logic_vector(15 downto 0);
+		 memdat  : in std_logic_vector(7 downto 0);
+		 xpos    : in integer range 0 to 1000;
+		 ypos    : in integer range 0 to 1000;
+		 pixel   : out std_logic_vector(1 downto 0)
+		 );
+END COMPONENT;
+
 begin
 VGA_CLK <= clk25;
 VGA_BLANK_N <='1' ;
@@ -83,8 +97,8 @@ begin
   if rising_edge(clk25) then
     if dispen='1' then
 
-     --here you paint!!
-      VGA_R <= outbyte;
+      --here you paint!!
+       VGA_R <= outbyte;
        VGA_G <= std_LOGIC_VECTOR(to_unsigned(col,8));
        VGA_B <= std_LOGIC_VECTOR(to_unsigned(myrow,8));
 
@@ -102,7 +116,6 @@ pll_inst : pll PORT MAP (
   outclk_0 => clk50,
   outclk_1 => clk25
 );
-    
 
 memoryfirst_inst : memoryfirst PORT MAP (
 		data	 => "00000000",
@@ -112,10 +125,8 @@ memoryfirst_inst : memoryfirst PORT MAP (
 		wrclock	 => '0',
 		wren	 => '0',
 		q	 => outbyte
-		
 	);
-	
-	
+
 Inst_vga_controller: vga_controller   
  GENERIC MAP (
     h_pulse  => 96,   --horiztonal sync pulse width in pixels
