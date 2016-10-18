@@ -4,7 +4,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity clockmodule is  
+entity gameboy is  
   port(CLOCK_50  : in std_logic;
        VGA_R : out std_logic_VECTOR (7 downto 0);
        VGA_G : out std_logic_VECTOR (7 downto 0);
@@ -15,13 +15,9 @@ entity clockmodule is
 		 VGA_BLANK_N : out std_logic;
 		 VGA_SYNC_N : out std_logic;
 		 LEDR : out std_logic_vector(9 downto 0));
-		 
+end gameboy;
 
-		 
-
-end clockmodule;
-
-architecture Behavioral of clockmodule is
+architecture Behavioral of gameboy is
 
 signal clk25              : std_logic;  
 signal outbyte : std_logic_vector (7 downto 0);
@@ -99,28 +95,6 @@ begin
        VGA_G <="00000000";
        VGA_B<= "00000000";
     end if;
---    if (horizontal_counter > "0000000000" )
---      and (horizontal_counter < "0001100001" ) -- 96+1
---    then
---      VGA_HS  <= '0';
---    else
---      VGA_HS  <= '1';
---    end if;
---    if (vertical_counter > "0000000000" )
---      and (vertical_counter < "0000000011" ) -- 2+1
---    then
---      VGA_VS  <= '0';
---    else
---      VGA_VS  <= '1';
---    end if;
---    horizontal_counter <= horizontal_counter+"0000000001";
---    if (horizontal_counter="1100100000") then
---      vertical_counter <= vertical_counter+"0000000001";
---      horizontal_counter <= "0000000000";
---    end if;
---    if (vertical_counter="1000001001") then
---      vertical_counter <= "0000000000";
---    end if;
   end if;
 end process;
 
