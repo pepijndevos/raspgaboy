@@ -1,0 +1,6 @@
+
+
+C:/altera/15.0/Projects/clockmodule/clockmodule-master/pll.vhd
+
+Oct 21 04PM:23:58>: Megafunction Altera PLL v16.0 is not listed in any 
+wizard.lst file in the specified library path(s).Wizard launch aborted
