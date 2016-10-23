@@ -41,8 +41,8 @@ ENTITY vga_controller IS
     h_sync    :  OUT  STD_LOGIC;  --horiztonal sync pulse
     v_sync    :  OUT  STD_LOGIC;  --vertical sync pulse
     disp_ena  :  OUT  STD_LOGIC;  --display enable ('1' = display time, '0' = blanking time)
-    column    :  OUT  INTEGER;    --horizontal pixel coordinate
-    row       :  OUT  INTEGER); --sync-on-green output to DAC
+    column    :  OUT  INTEGER range 0 to 1000;    --horizontal pixel coordinate
+    row       :  OUT  INTEGER range 0 to 1000); --sync-on-green output to DAC
 END vga_controller;
 
 ARCHITECTURE behavior OF vga_controller IS

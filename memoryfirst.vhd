@@ -68,7 +68,7 @@ BEGIN
 		clock_enable_input_a => "BYPASS",
 		clock_enable_input_b => "BYPASS",
 		clock_enable_output_b => "BYPASS",
-		init_file => "pokeblue.hex",
+		init_file => "/home/pepijn/code/altera/clockmodule/pokeblue.hex",
 		intended_device_family => "Cyclone V",
 		lpm_type => "altsyncram",
 		numwords_a => 65536,

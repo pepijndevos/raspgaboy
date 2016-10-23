@@ -12,17 +12,21 @@ entity gameboy is
 		 VGA_CLK : out std_logic;
 		 VGA_BLANK_N : out std_logic;
 		 VGA_SYNC_N : out std_logic;
-		 LEDR : out std_logic_vector(9 downto 0));
+		 LEDR : out std_logic_vector(9 downto 0);
+		 KEY : in std_logic_vector(3 downto 0));
 end gameboy;
 
 architecture Behavioral of gameboy is
 
 signal clk25              : std_logic;  
-signal clk50              : std_logic;  
+signal clk50              : std_logic;
+signal reset   : std_logic;
+signal ahrst   : std_logic;
 signal outbyte : std_logic_vector (7 downto 0);
-signal nullsig :  STD_LOGIC_VECTOR (7 DOWNTO 0);
-signal myrow     : integer;
-signal col     : integer;
+signal memaddr : std_logic_vector (15 downto 0);
+signal pixel : std_logic_vector (1 downto 0);
+signal row     : integer range 0 to 1000;
+signal col     : integer range 0 to 1000;
 signal dispen  : std_logic;
 
 component memoryfirst
@@ -56,8 +60,8 @@ COMPONENT vga_controller
 		h_sync : OUT std_logic;
 		v_sync : OUT std_logic;
 		disp_ena : OUT std_logic;
-		column : OUT INTEGER;
-		row : OUT INTEGER
+		column : OUT INTEGER range 0 to 1000;
+		row : OUT INTEGER range 0 to 1000
 		);
 	END COMPONENT;
 	
@@ -90,6 +94,8 @@ begin
 VGA_CLK <= clk25;
 VGA_BLANK_N <='1' ;
 VGA_SYNC_N <= '0';
+reset <= KEY(0);
+ahrst <= not reset;
 
 process (clk25)  
 begin  
@@ -98,29 +104,38 @@ begin
     if dispen='1' then
 
       --here you paint!!
-       VGA_R <= outbyte;
-       VGA_G <= std_LOGIC_VECTOR(to_unsigned(col,8));
-       VGA_B <= std_LOGIC_VECTOR(to_unsigned(myrow,8));
+       VGA_R <= pixel & pixel & pixel & pixel;
+       VGA_G <= pixel & pixel & pixel & pixel;
+       VGA_B <= pixel & pixel & pixel & pixel;
 
     else
        VGA_R <= "00000000";
        VGA_G <="00000000";
-       VGA_B<= "00000000";
+       VGA_B <= "00000000";
     end if;
   end if;
 end process;
 
 pll_inst : pll PORT MAP (
   refclk => CLOCK_50,
-  rst => '0',
+  rst => ahrst,
   outclk_0 => clk50,
   outclk_1 => clk25
 );
 
+tilemap_inst : tilemap PORT MAP (
+  clk => clk25,
+  rst => reset,
+  memaddr => memaddr,
+  memdat => outbyte,
+  xpos => col/2,
+  ypos => row/2,
+  pixel => pixel);
+
 memoryfirst_inst : memoryfirst PORT MAP (
 		data	 => "00000000",
-		rdaddress	 => std_LOGIC_VECTOR(to_unsigned(myrow,16)),
-		rdclock	 => clk25,
+		rdaddress	 => memaddr,
+		rdclock	 => clk50,
 		wraddress	 => "0000000000000000",
 		wrclock	 => '0',
 		wren	 => '0',
@@ -141,12 +156,12 @@ Inst_vga_controller: vga_controller
     v_pol    => '0')
 PORT MAP(
 		pixel_clk => clk25,
-		reset_n => '1',
+		reset_n => reset,
 		h_sync => VGA_HS ,
 		v_sync => VGA_VS,
 		disp_ena => dispen,
 		column => col,
-		row => myrow
+		row => row
 	);
 
 
