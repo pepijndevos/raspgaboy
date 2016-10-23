@@ -47,39 +47,41 @@ begin
     tile_int := (others => '0');
 	 rowaddr := (others => '0');
   elsif rising_edge(clk) then
-    if xpos > xoffset and xpos < xoffset+screen_width  and
-	    ypos > yoffset and ypos < yoffset+screen_height then
+    if xpos >= xoffset and xpos < xoffset+screen_width+8  and
+	    ypos >= yoffset and ypos < yoffset+screen_height then
 	   tilecol := to_unsigned(xpos-xoffset, 3);
       case tilecol is
 		  when "000" =>
-		    pixel <= tile(0) & tile(8);
+		    pixel <= not (tile(15) & tile(7));
 			 rowaddr := tile_nr_addr(xpos-xoffset, ypos-yoffset);
 			 memaddr <= std_logic_vector(rowaddr);
 		  when "001" =>
-		    pixel <= tile(1) & tile(9);
+		    pixel <= not (tile(14) & tile(6));
 		  when "010" =>
-		    pixel <= tile(2) & tile(10);
+		    pixel <= not (tile(13) & tile(5));
 			 rowaddr := tile_data(unsigned(memdat), ypos-yoffset);
 			 memaddr <= std_logic_vector(rowaddr);
 		  when "011" =>
-		    pixel <= tile(3) & tile(11);
+		    pixel <= not (tile(12) & tile(4));
 		  when "100" =>
-		    pixel <= tile(4) & tile(12);
+		    pixel <= not (tile(11) & tile(3));
 			 tile_int(7 downto 0) := memdat;
 			 memaddr <= std_logic_vector(rowaddr+1);
 		  when "101" =>
-		    pixel <= tile(5) & tile(13);
+		    pixel <= not (tile(10) & tile(2));
 		  when "110" =>
-		    pixel <= tile(6) & tile(14);
+		    pixel <= not (tile(9) & tile(1));
 		  when "111" =>
-		    pixel <= tile(7) & tile(15);
+		    pixel <= not (tile(8) & tile(0));
 			 tile_int(15 downto 8) := memdat;
 			 tile := tile_int;
 		  when others =>
-		    pixel <= "10";
+		    pixel <= "11";
 		end case;
 	 else
-	   pixel <= "10";
+	   pixel <= "11";
+		tile := (others => '0');
+      tile_int := (others => '0');
 	 end if;
   end if;
 end process;
