@@ -19,6 +19,7 @@ end gameboy;
 architecture Behavioral of gameboy is
 
 signal clk25              : std_logic;  
+signal clk12              : std_logic;  
 signal clk50              : std_logic;
 signal reset   : std_logic;
 signal ahrst   : std_logic;
@@ -73,7 +74,8 @@ COMPONENT pll
 		refclk		:	 IN STD_LOGIC;
 		rst		:	 IN STD_LOGIC;
 		outclk_0		:	 OUT STD_LOGIC;
-		outclk_1		:	 OUT STD_LOGIC
+		outclk_1		:	 OUT STD_LOGIC;
+		outclk_2		:	 OUT STD_LOGIC
 	);
 END COMPONENT;
 
@@ -104,7 +106,7 @@ row_mul <= row/2;
 process (clk25)  
 begin  
   LEDR (7 downto 0) <= outbyte;
-  if rising_edge(clk25) then
+  if rising_edge(clk12) then
     if dispen='1' then
 
       --here you paint!!
@@ -124,11 +126,12 @@ pll_inst : pll PORT MAP (
   refclk => CLOCK_50,
   rst => ahrst,
   outclk_0 => clk50,
-  outclk_1 => clk25
+  outclk_1 => clk25,
+  outclk_2 => clk12
 );
 
 tilemap_inst : tilemap PORT MAP (
-  clk => clk25,
+  clk => clk12,
   rst => reset,
   memaddr => memaddr,
   memdat => outbyte,
