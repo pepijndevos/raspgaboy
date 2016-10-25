@@ -106,7 +106,7 @@ row_mul <= row/2;
 process (clk25)  
 begin  
   LEDR (7 downto 0) <= outbyte;
-  if rising_edge(clk12) then
+  if rising_edge(clk25) then
     if dispen='1' then
 
       --here you paint!!

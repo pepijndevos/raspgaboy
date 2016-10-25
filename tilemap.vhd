@@ -31,7 +31,8 @@ architecture bhv of tilemap is
     variable tilestart: unsigned( 15 downto 0);
     variable tilerow : unsigned (2 downto 0); 
   BEGIN
-    tilestart := x"8000" + 16*tilenr ;     --start of tile
+    --tilestart := x"8000" + 16*tilenr ;     --start of tile
+    tilestart := x"8800" + 16*(tilenr+128) ;     --start of tile
 	 tilerow := to_unsigned(ypos,3);
 	 return tilestart + tilerow*2; 
   END tile_data;
