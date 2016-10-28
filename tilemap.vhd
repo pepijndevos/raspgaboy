@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity tilemap is
   generic(xoffset : integer := 100;
-          yoffset : integer := 0;
+          yoffset : integer := 20;
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
   port(clk     : in std_logic;
@@ -44,64 +44,60 @@ process (clk, rst)
 variable tile     : std_logic_vector(15 downto 0);
 variable tile_int : std_logic_vector(15 downto 0);
 variable rowaddr  : unsigned(15 downto 0);
-variable tilecol  : unsigned(2 downto 0);
+variable tilecol  : integer range 0 to 7;
 variable LCDC	   : std_logic_vector(7 downto 0);
 variable SCY	   : integer range 0 to 255;
 variable SCX	   : integer range 0 to 255;
-variable realx    : integer range 0 to 255;
-variable realy    : integer range 0 to 255;
+variable realx    : integer range -xoffset to 255;
+variable realy    : integer range -yoffset to 255;
 begin
   if(rst = '0') then
     tile := (others => '0');
     tile_int := (others => '0');
 	 rowaddr := (others => '0');
   elsif rising_edge(clk) then
-    if xpos >= xoffset and xpos < xoffset+screen_width+8  and
+    realx := xpos-xoffset+SCX;
+    realy := ypos-yoffset+SCY;
+	 tilecol := realx rem 8;
+    if xpos >= xoffset and xpos < xoffset+screen_width  and
 	    ypos >= yoffset and ypos < yoffset+screen_height then
-		realx := xpos-xoffset+SCX;
-		realy := ypos-yoffset+SCY;
-	   tilecol := to_unsigned(realx, 3);
+		pixel <= not (tile(15-tilecol) & tile(7-tilecol));
+	 end if;
+	 
+	 if xpos >= xoffset-16 and xpos < xoffset+screen_width  and
+	    ypos >= yoffset and ypos < yoffset+screen_height then
       case tilecol is
-		  when "000" =>
-		    pixel <= not (tile(15) & tile(7));
-		  when "001" =>
-		    pixel <= not (tile(14) & tile(6));
-		  when "010" =>
-		    pixel <= not (tile(13) & tile(5));
-		  when "011" =>
-		    pixel <= not (tile(12) & tile(4));
-		  when "100" =>
-		    pixel <= not (tile(11) & tile(3));
+		  when 4 =>
 			 rowaddr := tile_nr_addr(realx, realy);
 			 memaddr <= std_logic_vector(rowaddr);
-		  when "101" =>
-		    pixel <= not (tile(10) & tile(2));
+		  when 5 =>
 			 rowaddr := tile_data(unsigned(memdat), realy, LCDC(4));
 			 memaddr <= std_logic_vector(rowaddr);
-		  when "110" =>
-		    pixel <= not (tile(9) & tile(1));
+		  when 6 =>
 			 tile_int(7 downto 0) := memdat;
 			 memaddr <= std_logic_vector(rowaddr+1);
-		  when "111" =>
-		    pixel <= not (tile(8) & tile(0));
+		  when 7 =>
 			 tile_int(15 downto 8) := memdat;
 			 tile := tile_int;
 		  when others =>
-		    pixel <= "11";
 		end case;
-	 else
-	   pixel <= "11";
+	 elsif ypos >= yoffset and ypos < yoffset+screen_height then
+	   pixel <= "00";
 		tile := (others => '0');
       tile_int := (others => '0');
-	case xpos is
-		when 0  => memaddr<=x"FF40";
-		when 1  => LCDC:=memdat;
-		           memaddr<=x"FF42";
-		when 2  => SCY:=to_integer(unsigned(memdat));
-		           memaddr<=x"FF43";
-		when 3  => SCX:=to_integer(unsigned(memdat));
-		when others => 
-	end case;
+		case xpos is
+			when 0  =>
+			  memaddr<=x"FF40";
+			when 1  =>
+			  LCDC:=memdat;
+			  memaddr<=x"FF42";
+			when 2  =>
+			  SCY:=to_integer(unsigned(memdat));
+			  memaddr<=x"FF43";
+			when 3  =>
+			  SCX:=to_integer(unsigned(memdat));
+			when others => 
+		end case;
 	 end if;
   end if;
 end process;

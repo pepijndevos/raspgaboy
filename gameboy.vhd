@@ -25,6 +25,8 @@ signal reset   : std_logic;
 signal ahrst   : std_logic;
 signal outbyte : std_logic_vector (7 downto 0);
 signal memaddr : std_logic_vector (15 downto 0);
+signal inbyte : std_logic_vector (7 downto 0);
+signal memwraddr : std_logic_vector (15 downto 0);
 signal pixel : std_logic_vector (1 downto 0);
 signal row     : integer range 0 to 1000;
 signal col     : integer range 0 to 1000;
@@ -81,7 +83,7 @@ END COMPONENT;
 
 COMPONENT tilemap is
   generic(xoffset : integer := 100;
-          yoffset : integer := 0;
+          yoffset : integer := 20;
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
   port(clk     : in std_logic;
@@ -122,6 +124,18 @@ begin
   end if;
 end process;
 
+process (clk12)
+variable counter : unsigned(31 downto 0);
+begin
+  if reset = '0' then
+    counter := (others => '0');
+  elsif rising_edge(clk12) then
+    counter := counter + 1;
+	 inbyte <= std_logic_vector(counter(31 downto 24));
+	 memwraddr <= x"FF43";
+  end if;
+end process;
+
 pll_inst : pll PORT MAP (
   refclk => CLOCK_50,
   rst => ahrst,
@@ -140,12 +154,12 @@ tilemap_inst : tilemap PORT MAP (
   pixel => pixel);
 
 memoryfirst_inst : memoryfirst PORT MAP (
-		data	 => "00000000",
+		data	 => inbyte,
 		rdaddress	 => memaddr,
 		rdclock	 => clk50,
-		wraddress	 => "0000000000000000",
-		wrclock	 => '0',
-		wren	 => '0',
+		wraddress	 => memwraddr,
+		wrclock	 => clk12,
+		wren	 => reset,
 		q	 => outbyte
 	);
 
