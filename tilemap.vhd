@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity tilemap is
   generic(xoffset : integer := 100;
-          yoffset : integer := 20;
+          yoffset : integer := 0;
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
   port(clk     : in std_logic;
@@ -55,10 +55,14 @@ begin
     tile := (others => '0');
     tile_int := (others => '0');
 	 rowaddr := (others => '0');
+	 tilecol := 0;
+	 LCDC := (others => '0');
+	 SCY := 0;
+	 SCX := 0;
   elsif rising_edge(clk) then
     realx := xpos-xoffset+SCX;
     realy := ypos-yoffset+SCY;
-	 tilecol := realx rem 8;
+	 tilecol := realx mod 8;
     if xpos >= xoffset and xpos < xoffset+screen_width  and
 	    ypos >= yoffset and ypos < yoffset+screen_height then
 		pixel <= not (tile(15-tilecol) & tile(7-tilecol));
@@ -98,6 +102,10 @@ begin
 			  SCX:=to_integer(unsigned(memdat));
 			when others => 
 		end case;
+	 else
+	   pixel <= "00";
+		tile := (others => '0');
+      tile_int := (others => '0');
 	 end if;
   end if;
 end process;

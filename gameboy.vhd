@@ -83,7 +83,7 @@ END COMPONENT;
 
 COMPONENT tilemap is
   generic(xoffset : integer := 100;
-          yoffset : integer := 20;
+          yoffset : integer := 0;
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
   port(clk     : in std_logic;
