@@ -18,13 +18,19 @@ entity tilemap is
 end tilemap;
 
 architecture bhv of tilemap is
-  FUNCTION tile_nr_addr (xpos:integer; ypos:integer) RETURN unsigned IS
+  FUNCTION tile_nr_addr (xpos:integer; ypos:integer; tilemap:std_logic) RETURN unsigned IS
     variable tilex : integer; 
 	 variable tiley : integer;
+	 variable baseaddr : unsigned(15 downto 0);
   BEGIN
     tilex := xpos / 8;   
 	 tiley := ypos / 8;
-	 return x"9800" + tiley*32 + tilex;  --tile number address
+	 if tilemap = '0' then
+	   baseaddr := x"9800";
+	 else
+	   baseaddr := x"9C00";
+	 end if;
+	 return baseaddr + tiley*32 + tilex;  --tile number address
   END tile_nr_addr;
   
   FUNCTION tile_data (tilenr:unsigned; ypos:integer; tileset:std_logic) RETURN unsigned IS
@@ -41,28 +47,38 @@ architecture bhv of tilemap is
   END tile_data;
 begin
 process (clk, rst)
-variable tile     : std_logic_vector(15 downto 0);
-variable tile_int : std_logic_vector(15 downto 0);
-variable rowaddr  : unsigned(15 downto 0);
-variable tilecol  : integer range 0 to 7;
-variable LCDC	   : std_logic_vector(7 downto 0);
-variable SCY	   : integer range 0 to 255;
-variable SCX	   : integer range 0 to 255;
-variable realx    : integer range -xoffset to 255;
-variable realy    : integer range -yoffset to 255;
+variable tile       : std_logic_vector(15 downto 0);
+variable tile_int   : std_logic_vector(15 downto 0);
+variable window     : std_logic_vector(15 downto 0);
+variable window_int : std_logic_vector(15 downto 0);
+variable rowaddr    : unsigned(15 downto 0);
+variable tilecol    : integer range 0 to 7;
+variable LCDC	     : std_logic_vector(7 downto 0);
+variable SCY	     : integer range 0 to 255;
+variable SCX	     : integer range 0 to 255;
+variable WY		     : integer range 0 to 255;
+variable WX		     : integer range 0 to 255;
+variable bgx        : integer range -255 to 255;
+variable bgy        : integer range -255 to 255;
+variable windowx    : integer range -255 to 255;
+variable windowy    : integer range -255 to 255;
 begin
   if(rst = '0') then
     tile := (others => '0');
     tile_int := (others => '0');
+	 window := (others => '0');
+    window_int := (others => '0');
 	 rowaddr := (others => '0');
 	 tilecol := 0;
 	 LCDC := (others => '0');
 	 SCY := 0;
 	 SCX := 0;
   elsif rising_edge(clk) then
-    realx := xpos-xoffset+SCX;
-    realy := ypos-yoffset+SCY;
-	 tilecol := realx mod 8;
+    bgx := xpos-xoffset+SCX;
+    bgy := ypos-yoffset+SCY;
+	 tilecol := bgx mod 8;
+	 windowx := xpos-xoffset-WX;
+    windowy := ypos-yoffset-WY;
     if xpos >= xoffset and xpos < xoffset+screen_width  and
 	    ypos >= yoffset and ypos < yoffset+screen_height then
 		pixel <= not (tile(15-tilecol) & tile(7-tilecol));
@@ -71,11 +87,22 @@ begin
 	 if xpos >= xoffset-16 and xpos < xoffset+screen_width  and
 	    ypos >= yoffset and ypos < yoffset+screen_height then
       case tilecol is
+		  when 0 =>
+			 rowaddr := tile_nr_addr(windowx, windowy, LCDC(6));
+			 memaddr <= std_logic_vector(rowaddr);
+		  when 1 =>
+			 rowaddr := tile_data(unsigned(memdat), windowy, LCDC(4));
+			 memaddr <= std_logic_vector(rowaddr);
+		  when 2 =>
+			 window_int(7 downto 0) := memdat;
+			 memaddr <= std_logic_vector(rowaddr+1);
+		  when 3 =>
+			 window_int(15 downto 8) := memdat;
 		  when 4 =>
-			 rowaddr := tile_nr_addr(realx, realy);
+			 rowaddr := tile_nr_addr(bgx, bgy, LCDC(3));
 			 memaddr <= std_logic_vector(rowaddr);
 		  when 5 =>
-			 rowaddr := tile_data(unsigned(memdat), realy, LCDC(4));
+			 rowaddr := tile_data(unsigned(memdat), bgy, LCDC(4));
 			 memaddr <= std_logic_vector(rowaddr);
 		  when 6 =>
 			 tile_int(7 downto 0) := memdat;
@@ -83,6 +110,7 @@ begin
 		  when 7 =>
 			 tile_int(15 downto 8) := memdat;
 			 tile := tile_int;
+			 window := window_int;
 		  when others =>
 		end case;
 	 elsif ypos >= yoffset and ypos < yoffset+screen_height then
@@ -100,6 +128,12 @@ begin
 			  memaddr<=x"FF43";
 			when 3  =>
 			  SCX:=to_integer(unsigned(memdat));
+			  memaddr<=x"FF4A";
+			when 4  =>
+			  WY:=to_integer(unsigned(memdat));
+			  memaddr<=x"FF4B";
+			when 5  =>
+			  WX:=to_integer(unsigned(memdat));
 			when others => 
 		end case;
 	 else
