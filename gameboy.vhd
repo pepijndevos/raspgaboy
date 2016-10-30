@@ -23,10 +23,27 @@ signal clk12              : std_logic;
 signal clk50              : std_logic;
 signal reset   : std_logic;
 signal ahrst   : std_logic;
-signal outbyte : std_logic_vector (7 downto 0);
-signal memaddr : std_logic_vector (15 downto 0);
-signal inbyte : std_logic_vector (7 downto 0);
-signal memwraddr : std_logic_vector (15 downto 0);
+
+signal oam_rd_dat : std_logic_vector (31 downto 0); -- 4 bytes
+signal oam_rd_addr : std_logic_vector (5 downto 0); -- 64 sprites (40 used)
+signal oam_wr_dat : std_logic_vector (7 downto 0);
+signal oam_wr_addr : std_logic_vector (7 downto 0); -- 256 bytes
+
+signal reg_rd_dat : std_logic_vector (7 downto 0); -- 1 byte
+signal reg_rd_addr : std_logic_vector (7 downto 0); -- 256 bytes
+signal reg_wr_dat : std_logic_vector (7 downto 0);
+signal reg_wr_addr : std_logic_vector (7 downto 0); -- 256 bytes
+
+signal tdat_rd_dat : std_logic_vector (15 downto 0); -- 2 bytes
+signal tdat_rd_addr : std_logic_vector (11 downto 0); -- 2*256*8 4k rows
+signal tdat_wr_dat : std_logic_vector (7 downto 0);
+signal tdat_wr_addr : std_logic_vector (12 downto 0); -- 2*256*16 8k bytes
+
+signal tmap_rd_dat : std_logic_vector (7 downto 0); -- 1 byte
+signal tmap_rd_addr : std_logic_vector (10 downto 0); -- 2*32*32 2k
+signal tmap_wr_dat : std_logic_vector (7 downto 0);
+signal tmap_wr_addr : std_logic_vector (10 downto 0); -- 2k
+
 signal pixel : std_logic_vector (1 downto 0);
 signal row     : integer range 0 to 1000;
 signal col     : integer range 0 to 1000;
@@ -34,18 +51,60 @@ signal row_mul : integer range 0 to 1000;
 signal col_mul : integer range 0 to 1000;
 signal dispen  : std_logic;
 
-component memoryfirst
+-- memory modules
+component oam
 	PORT
 	(
 		data		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
-		rdaddress		: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
+		rdaddress		: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
 		rdclock		: IN STD_LOGIC ;
-		wraddress		: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
+		wraddress		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		wrclock		: IN STD_LOGIC  := '1';
+		wren		: IN STD_LOGIC  := '0';
+		q		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
+	);
+end component;
+
+component registers
+	PORT
+	(
+		data		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		rdaddress		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		rdclock		: IN STD_LOGIC ;
+		wraddress		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
 		wrclock		: IN STD_LOGIC  := '1';
 		wren		: IN STD_LOGIC  := '0';
 		q		: OUT STD_LOGIC_VECTOR (7 DOWNTO 0)
 	);
 end component;
+
+component tiledata
+	PORT
+	(
+		data		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		rdaddress		: IN STD_LOGIC_VECTOR (11 DOWNTO 0);
+		rdclock		: IN STD_LOGIC ;
+		wraddress		: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+		wrclock		: IN STD_LOGIC  := '1';
+		wren		: IN STD_LOGIC  := '0';
+		q		: OUT STD_LOGIC_VECTOR (15 DOWNTO 0)
+	);
+end component;
+
+component tilemapram
+	PORT
+	(
+		data		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		rdaddress		: IN STD_LOGIC_VECTOR (10 DOWNTO 0);
+		rdclock		: IN STD_LOGIC ;
+		wraddress		: IN STD_LOGIC_VECTOR (10 DOWNTO 0);
+		wrclock		: IN STD_LOGIC  := '1';
+		wren		: IN STD_LOGIC  := '0';
+		q		: OUT STD_LOGIC_VECTOR (7 DOWNTO 0)
+	);
+end component;
+
+-- VGA module
 
 COMPONENT vga_controller
 	GENERIC(
@@ -88,8 +147,19 @@ COMPONENT tilemap is
 			 screen_height : integer := 144);
   port(clk     : in std_logic;
        rst     : in std_logic;
-		 memaddr : out std_logic_vector(15 downto 0);
-		 memdat  : in std_logic_vector(7 downto 0);
+		 
+		 oam_rd_dat : in std_logic_vector (31 downto 0); -- 4 bytes
+		 oam_rd_addr : out std_logic_vector (5 downto 0);
+
+		 reg_rd_dat : in std_logic_vector (7 downto 0); -- 1 byte
+		 reg_rd_addr : out std_logic_vector (7 downto 0);
+
+		 tdat_rd_dat : in std_logic_vector (15 downto 0); -- 2 bytes
+		 tdat_rd_addr : out std_logic_vector (11 downto 0);
+
+		 tmap_rd_dat : in std_logic_vector (7 downto 0); -- 1 bytes
+		 tmap_rd_addr : out std_logic_vector (10 downto 0);
+		 
 		 xpos    : in integer range 0 to 1000;
 		 ypos    : in integer range 0 to 1000;
 		 pixel   : out std_logic_vector(1 downto 0)
@@ -107,7 +177,6 @@ row_mul <= row/2;
 
 process (clk25)  
 begin  
-  LEDR (7 downto 0) <= outbyte;
   if rising_edge(clk25) then
     if dispen='1' then
 
@@ -131,8 +200,8 @@ begin
     counter := (others => '0');
   elsif rising_edge(clk12) then
     counter := counter + 1;
-	 inbyte <= std_logic_vector(counter(31 downto 24));
-	 memwraddr <= x"FF43";
+	 reg_wr_dat <= std_logic_vector(counter(31 downto 24));
+	 reg_wr_addr <= x"43";
   end if;
 end process;
 
@@ -147,20 +216,56 @@ pll_inst : pll PORT MAP (
 tilemap_inst : tilemap PORT MAP (
   clk => clk12,
   rst => reset,
-  memaddr => memaddr,
-  memdat => outbyte,
+  oam_rd_dat => oam_rd_dat,
+  oam_rd_addr => oam_rd_addr,
+  reg_rd_dat => reg_rd_dat,
+  reg_rd_addr => reg_rd_addr,
+  tdat_rd_dat => tdat_rd_dat,
+  tdat_rd_addr => tdat_rd_addr,
+  tmap_rd_dat => tmap_rd_dat,
+  tmap_rd_addr => tmap_rd_addr,
   xpos => col_mul,
   ypos => row_mul,
   pixel => pixel);
 
-memoryfirst_inst : memoryfirst PORT MAP (
-		data	 => inbyte,
-		rdaddress	 => memaddr,
+oam_inst : oam PORT MAP (
+		data	 => oam_wr_dat,
+		rdaddress	 => oam_rd_addr,
 		rdclock	 => clk50,
-		wraddress	 => memwraddr,
-		wrclock	 => clk12,
-		wren	 => reset,
-		q	 => outbyte
+		wraddress	 => oam_wr_addr,
+		wrclock	 => clk50, -- fix
+		wren	 => '0',
+		q	 => oam_rd_dat
+	);
+
+registers_inst : registers PORT MAP (
+		data	 => reg_wr_dat,
+		rdaddress	 => reg_rd_addr,
+		rdclock	 => clk50,
+		wraddress	 => reg_wr_addr,
+		wrclock	 => clk12, --fix
+		wren	 => '1',
+		q	 => reg_rd_dat
+	);
+
+tiledata_inst : tiledata PORT MAP (
+		data	 => tdat_wr_dat,
+		rdaddress	 => tdat_rd_addr,
+		rdclock	 => clk50,
+		wraddress	 => tdat_wr_addr,
+		wrclock	 => clk50, -- fix
+		wren	 => '0',
+		q	 => tdat_rd_dat
+	);
+	
+tilemapram_inst : tilemapram PORT MAP (
+		data	 => tmap_wr_dat,
+		rdaddress	 => tmap_rd_addr,
+		rdclock	 => clk50,
+		wraddress	 => tmap_wr_addr,
+		wrclock	 => clk50,
+		wren	 => '0',
+		q	 => tmap_rd_dat
 	);
 
 Inst_vga_controller: vga_controller   

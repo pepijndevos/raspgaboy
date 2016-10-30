@@ -68,7 +68,7 @@ BEGIN
 		clock_enable_input_a => "BYPASS",
 		clock_enable_input_b => "BYPASS",
 		clock_enable_output_b => "BYPASS",
-		init_file => "oam.hex",
+		init_file => "/home/pepijn/code/altera/gameboy/ramdumps/oam.hex",
 		init_file_layout => "PORT_A",
 		intended_device_family => "Cyclone V",
 		lpm_type => "altsyncram",
