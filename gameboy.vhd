@@ -175,6 +175,13 @@ ahrst <= not reset;
 col_mul <= col/2;
 row_mul <= row/2;
 
+oam_wr_addr  <= (others=>'0');
+oam_wr_dat   <= (others=>'0');
+tmap_wr_addr <= (others=>'0');
+tmap_wr_dat  <= (others=>'0');
+tdat_wr_addr <= (others=>'0');
+tdat_wr_dat  <= (others=>'0');
+
 process (clk25)  
 begin  
   if rising_edge(clk25) then
