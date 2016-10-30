@@ -78,8 +78,8 @@ architecture bhv of tilemap is
   FUNCTION get_current_sprite (screenx:integer; sprites:sprite_t) RETURN integer IS
   BEGIN
     for i in 0 to 9 loop
-	   if unsigned(sprites(i)(15 downto 8))-8 >= screenx and
-		   unsigned(sprites(i)(15 downto 8))-8 < screenx+8 then
+	   if screenx >= unsigned(sprites(i)(15 downto 8))-8 and
+		   screenx <  unsigned(sprites(i)(15 downto 8)) then
 		  return i;
 		end if;
 	 end loop;
@@ -127,7 +127,7 @@ architecture bhv of tilemap is
 begin
   drawing <= xpos >= xoffset and xpos < xoffset+screen_width and
 	          ypos >= yoffset and ypos < yoffset+screen_height;
-  cur_sprite <= get_current_sprite(screenx+1, sprite_lst);
+  cur_sprite <= get_current_sprite(screenx, sprite_lst);
   pixel_type <= get_pixel_type(xpos+1, ypos, SCX, SCY, WX, WY, LCDC, cur_sprite);
 
   screenx <= xpos-xoffset;
@@ -217,8 +217,8 @@ begin
 			when others => 
 		end case;
 		if xpos > 0 and xpos < 41 then
-		  if unsigned(oam_rd_dat(7 downto 0))-16 > screeny and
-		     unsigned(oam_rd_dat(7 downto 0))-16 <= screeny+8 then
+		  if screeny >= unsigned(oam_rd_dat(7 downto 0))-16 and
+		     screeny < unsigned(oam_rd_dat(7 downto 0))-8 then
 		    sprite_lst(sprite_counter) <= oam_rd_dat;
 			 sprite_counter := sprite_counter+1;
 		  end if;
