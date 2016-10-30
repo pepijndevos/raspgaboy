@@ -29,6 +29,7 @@ entity tilemap is
 end tilemap;
 
 architecture bhv of tilemap is
+  type pixel_t is (BLANK, BG, WINDOW, SPRITE);
   FUNCTION tile_nr_addr (xpos:integer; ypos:integer; tilemap:std_logic) RETURN unsigned IS
     variable tilex : integer; 
 	 variable tiley : integer;
@@ -56,8 +57,34 @@ architecture bhv of tilemap is
     tilerow := to_unsigned(ypos,3);
     return tilestart + tilerow;
   END tile_data;
-	signal tile       : std_logic_vector(15 downto 0);
-
+  
+  FUNCTION get_pixel_type (xpos:integer; ypos:integer;
+                       SCX:integer; SCY:integer;
+							  WX:integer; WY: integer;
+							  LCDC:std_logic_vector) RETURN pixel_t IS
+    variable tilex : integer; 
+	 variable tiley : integer;
+	 variable baseaddr : unsigned(10 downto 0);
+  BEGIN
+    if false then
+	   return SPRITE;
+	 elsif LCDC(5) = '1' and xpos >= WX and ypos >= WY then
+	   return WINDOW;
+	 elsif LCDC(0) = '1' then
+	   return BG;
+	 else
+	   return BLANK;
+	 end if;
+  END get_pixel_type;
+ 
+--  Bit 7 - LCD Display Enable             (0=Off, 1=On)
+--  Bit 6 - Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
+--  Bit 5 - Window Display Enable          (0=Off, 1=On)
+--  Bit 4 - BG & Window Tile Data Select   (0=8800-97FF, 1=8000-8FFF)
+--  Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
+--  Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
+--  Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
+--  Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
 	signal LCDC	     : std_logic_vector(7 downto 0);
 	signal SCY	     : integer range 0 to 255;
 	signal SCX	     : integer range 0 to 255;
@@ -75,21 +102,34 @@ architecture bhv of tilemap is
 	signal scrncol    : integer range 0 to 7;
 	
 	signal drawing    : boolean;
+   signal tile       : std_logic_vector(15 downto 0);
+	signal pixel_type : pixel_t;
 begin
   drawing <= xpos >= xoffset and xpos < xoffset+screen_width and
 	          ypos >= yoffset and ypos < yoffset+screen_height;
+  pixel_type <= get_pixel_type(xpos+1, ypos, SCX, SCY, WX, WY, LCDC);
 
   screenx <= xpos-xoffset;
   screeny <= ypos-yoffset;
   bgx <= screenx+SCX;
   bgy <= screeny+SCY;
-  windowx <= screenx-WX;
+  windowx <= screenx-WX+7;
   windowy <= screeny-WY;
   tilecol <= bgx mod 8;
   windcol <= windowx mod 8;
   scrncol <= screenx mod 8;
   
-  tmap_rd_addr <= std_logic_vector(tile_nr_addr(bgx+1, bgy, LCDC(3)));
+  process(pixel_type, bgx, bgy, windowx, windowy, LCDC)
+  begin
+    case pixel_type is
+        when BG =>
+		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(bgx+1, bgy, LCDC(3)));
+        when WINDOW =>
+		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(windowx+1, windowy, LCDC(6)));
+        when SPRITE =>
+        when BLANK =>
+    end case;
+  end process;
   tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), bgy, LCDC(4)));
   tile <= tdat_rd_dat;
 
@@ -104,7 +144,14 @@ begin
   elsif rising_edge(clk) then
 
     if drawing then
-	   pixel <= not (tile(15-tilecol) & tile(7-tilecol));
+	   case pixel_type is
+        when BG =>
+		    pixel <= not (tile(15-tilecol) & tile(7-tilecol));
+        when WINDOW =>
+		    pixel <= not (tile(15-windcol) & tile(7-windcol));
+        when SPRITE =>
+        when BLANK =>
+      end case;
 	 else
 	   pixel <= "10";
 	 end if;
