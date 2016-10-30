@@ -124,13 +124,14 @@ begin
     case pixel_type is
         when BG =>
 		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(bgx+1, bgy, LCDC(3)));
+			 tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), bgy, LCDC(4)));
         when WINDOW =>
 		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(windowx+1, windowy, LCDC(6)));
+			 tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), windowy, LCDC(4)));
         when SPRITE =>
         when BLANK =>
     end case;
   end process;
-  tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), bgy, LCDC(4)));
   tile <= tdat_rd_dat;
 
 process (clk, rst)

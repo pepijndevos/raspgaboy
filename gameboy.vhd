@@ -200,8 +200,8 @@ begin
     counter := (others => '0');
   elsif rising_edge(clk12) then
     counter := counter + 1;
-	 reg_wr_dat <= std_logic_vector(counter(29 downto 22));
-	 reg_wr_addr <= x"43";
+	 reg_wr_dat <= std_logic_vector(counter(27 downto 20));
+	 reg_wr_addr <= x"4A";
   end if;
 end process;
 
