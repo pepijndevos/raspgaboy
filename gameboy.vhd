@@ -13,7 +13,15 @@ entity gameboy is
 		 VGA_BLANK_N : out std_logic;
 		 VGA_SYNC_N : out std_logic;
 		 LEDR : out std_logic_vector(9 downto 0);
-		 KEY : in std_logic_vector(3 downto 0));
+		 KEY : in std_logic_vector(3 downto 0);
+		 HEX0, HEX1,
+		 HEX2, HEX3,
+		 HEX4, HEX5  : OUT std_logic_vector(6 DOWNTO 0);
+		 raspi_ss0   : in  STD_LOGIC;
+	    raspi_ss1   : in  STD_LOGIC;
+       raspi_mosi  : in  STD_LOGIC;
+       raspi_miso  : out STD_LOGIC;
+       raspi_sck   : in  STD_LOGIC);
 end gameboy;
 
 architecture Behavioral of gameboy is
@@ -166,6 +174,19 @@ COMPONENT tilemap is
 		 );
 END COMPONENT;
 
+COMPONENT showspi IS
+  PORT (
+    reset       : in std_logic;
+    dig0, dig1,
+	 dig2, dig3,
+    dig4, dig5  : OUT std_logic_vector(6 DOWNTO 0); -- show key pressed on display in Hex dig1 (upper 4 bits) dig0 (lower 4 bits)
+	 raspi_ss0   : in  STD_LOGIC;
+	 raspi_ss1   : in  STD_LOGIC;
+    raspi_mosi  : in  STD_LOGIC;
+	 raspi_miso  : out STD_LOGIC;
+    raspi_sck   : in  STD_LOGIC);
+END COMPONENT;
+
 begin
 VGA_CLK <= clk25;
 VGA_BLANK_N <='1' ;
@@ -263,6 +284,21 @@ tiledata_inst : tiledata PORT MAP (
 		wrclock	 => clk50, -- fix
 		wren	 => '0',
 		q	 => tdat_rd_dat
+	);
+
+showspi_inst : showspi PORT MAP (
+		reset => reset,
+		dig0 => HEX0,
+		dig1 => HEX1,
+		dig2 => HEX2,
+		dig3 => HEX3,
+		dig4 => HEX4,
+		dig5 => HEX5,
+		raspi_ss0 => raspi_ss0,
+		raspi_ss1 => raspi_ss1,   
+		raspi_mosi => raspi_mosi,  
+		raspi_miso => raspi_miso,
+		raspi_sck => raspi_sck   
 	);
 	
 tilemapram_inst : tilemapram PORT MAP (
