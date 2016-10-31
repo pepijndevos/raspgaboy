@@ -103,6 +103,13 @@ architecture bhv of tilemap is
    signal SPY	     : integer range 0 to 255;
 	signal SPX	     : integer range 0 to 255;
 	signal SPN	     : unsigned(7 downto 0);
+--  Bit7   OBJ-to-BG Priority (0=OBJ Above BG, 1=OBJ Behind BG color 1-3)
+--         (Used for both BG and Window. BG color 0 is always behind OBJ)
+--  Bit6   Y flip          (0=Normal, 1=Vertically mirrored)
+--  Bit5   X flip          (0=Normal, 1=Horizontally mirrored)
+--  Bit4   Palette number  **Non CGB Mode Only** (0=OBP0, 1=OBP1)
+--  Bit3   Tile VRAM-Bank  **CGB Mode Only**     (0=Bank 0, 1=Bank 1)
+--  Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
 	signal SPF	     : std_logic_vector(7 downto 0);
 	
 	signal bgx        : integer range -255 to 1000;
@@ -142,6 +149,8 @@ begin
   SPX <= to_integer(unsigned(sprite_lst(cur_sprite)(15 downto 8)))
          when cur_sprite /= -1 else 0;
   SPN <= unsigned(sprite_lst(cur_sprite)(23 downto 16))
+         when cur_sprite /= -1 else x"00";
+  SPF <= sprite_lst(cur_sprite)(31 downto 24)
          when cur_sprite /= -1 else x"00";
 			
   spritex <= screenx-SPX+8;
@@ -186,7 +195,11 @@ begin
         when WINDOW =>
 		    pixel <= not (tile(15-windcol) & tile(7-windcol));
         when SPRITE =>
-		    pixel <= not (tile(15-sprtcol) & tile(7-sprtcol));
+		    if SPF(5) = '0' then -- check horizontal flip
+		      pixel <= not (tile(15-sprtcol) & tile(7-sprtcol));
+			 else
+			   pixel <= not (tile(8+sprtcol) & tile(sprtcol));
+			 end if;
         when BLANK =>
       end case;
 	 else
