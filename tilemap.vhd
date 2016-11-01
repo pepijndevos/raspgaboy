@@ -144,8 +144,8 @@ begin
 
   screenx <= xpos-xoffset;
   screeny <= ypos-yoffset;
-  bgx <= screenx+SCX;
-  bgy <= screeny+SCY;
+  bgx <= (screenx+SCX) mod 255;
+  bgy <= (screeny+SCY) mod 255;
   windowx <= screenx-WX+7;
   windowy <= screeny-WY;
   
