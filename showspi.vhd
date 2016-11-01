@@ -14,7 +14,17 @@ ENTITY showspi IS
 	 raspi_ss1   : in  STD_LOGIC;
     raspi_mosi  : in  STD_LOGIC;
 	 raspi_miso  : out STD_LOGIC;
-    raspi_sck   : in  STD_LOGIC);
+    raspi_sck   : in  STD_LOGIC;
+	
+	oam_wr_dat : out std_logic_vector (7 downto 0);
+    oam_wr_addr : out std_logic_vector (7 downto 0); -- 256 bytes
+    reg_wr_dat : out std_logic_vector (7 downto 0);
+    reg_wr_addr : out std_logic_vector (7 downto 0); -- 256 bytes
+    tdat_wr_dat : out std_logic_vector (7 downto 0);
+    tdat_wr_addr : out std_logic_vector (12 downto 0); -- 2*256*16 8k bytes
+	tmap_wr_dat : out std_logic_vector (7 downto 0);
+    tmap_wr_addr : out std_logic_vector (10 downto 0) -- 2k
+	);
 END showspi;
 
 
@@ -44,7 +54,10 @@ ARCHITECTURE bhv OF showspi IS
 BEGIN
   process (raspi_sck, reset)
   	variable dword   : std_logic_vector (23 downto 0);
-	variable spidx   : integer range dword'high to dword'low;
+	variable spidx   : integer range dword'low to dword'high;
+	variable part : std_logic_vector (15 downto 0); 
+	variable temp : unsigned (15 downto 0);
+	variable long_address : std_logic_vector (15 downto 0);
 	begin
 	   if reset = '0' or raspi_ss0 = '1' then
 		  dword := (others=>'0');
@@ -59,9 +72,32 @@ BEGIN
 		    dig4 <= hex2display(dword(19 downto 16));
 			 dig5 <= hex2display(dword(23 downto 20));
 			 spidx := 0;
+			 part := dword(23 downto 8);
+			 temp := unsigned(part);
+			 
+			if temp >= x"FE00" and temp<= x"FE9F" then 
+				oam_wr_dat <= dword (7 downto 0);
+				--oam_wr_addr <=  std_logic_vector(to_unsigned(part), 8);
+				long_address := std_logic_vector(temp- x"fe00");
+				oam_wr_addr <= long_address(7 downto 0);
+			elsif temp >= x"FF00" and temp <= x"FFFF" then 
+				reg_wr_dat <= dword (7 downto 0) ;
+				long_address := std_logic_vector(temp- x"ff00");
+				reg_wr_addr <=  long_address(7 downto 0); 
+			elsif temp >= x"8000" and temp <= x"97ff" then 
+				tdat_wr_dat <= dword (7 downto 0);
+				long_address := std_logic_vector(temp- x"8000");
+				tdat_wr_addr <=  long_address(12 downto 0);
+			elsif temp >= x"9800" and temp <= x"9FFf" then 
+				tmap_wr_dat <= dword(7 downto 0) ; 
+				long_address := std_logic_vector(temp- x"9800");
+				tmap_wr_addr <=  long_address(10 downto 0);
+			end if; 
+
 		  else
 	       spidx := spidx+1;
 	     end if;
+		 
 		end if;
 	end process;
 END;

@@ -58,6 +58,7 @@ signal col     : integer range 0 to 1000;
 signal row_mul : integer range 0 to 1000;
 signal col_mul : integer range 0 to 1000;
 signal dispen  : std_logic;
+signal wren    : std_logic;
 
 -- memory modules
 component oam
@@ -184,7 +185,16 @@ COMPONENT showspi IS
 	 raspi_ss1   : in  STD_LOGIC;
     raspi_mosi  : in  STD_LOGIC;
 	 raspi_miso  : out STD_LOGIC;
-    raspi_sck   : in  STD_LOGIC);
+    raspi_sck   : in  STD_LOGIC;
+	 oam_wr_dat : out std_logic_vector (7 downto 0);
+    oam_wr_addr : out std_logic_vector (7 downto 0); -- 256 bytes
+    reg_wr_dat : out std_logic_vector (7 downto 0);
+    reg_wr_addr : out std_logic_vector (7 downto 0); -- 256 bytes
+    tdat_wr_dat : out std_logic_vector (7 downto 0);
+    tdat_wr_addr : out std_logic_vector (12 downto 0); -- 2*256*16 8k bytes
+	tmap_wr_dat : out std_logic_vector (7 downto 0);
+    tmap_wr_addr : out std_logic_vector (10 downto 0)
+	 );-- 2k
 END COMPONENT;
 
 begin
@@ -195,13 +205,7 @@ reset <= KEY(0);
 ahrst <= not reset;
 col_mul <= col/2;
 row_mul <= row/2;
-
-oam_wr_addr  <= (others=>'0');
-oam_wr_dat   <= (others=>'0');
-tmap_wr_addr <= (others=>'0');
-tmap_wr_dat  <= (others=>'0');
-tdat_wr_addr <= (others=>'0');
-tdat_wr_dat  <= (others=>'0');
+wren <= not raspi_ss0;
 
 process (clk25)  
 begin  
@@ -218,18 +222,6 @@ begin
        VGA_G <="00000000";
        VGA_B <= "00000000";
     end if;
-  end if;
-end process;
-
-process (clk12)
-variable counter : unsigned(31 downto 0);
-begin
-  if reset = '0' then
-    counter := (others => '0');
-  elsif rising_edge(clk12) then
-    counter := counter + 1;
-	 reg_wr_dat <= std_logic_vector(counter(27 downto 20));
-	 reg_wr_addr <= x"4A";
   end if;
 end process;
 
@@ -261,8 +253,8 @@ oam_inst : oam PORT MAP (
 		rdaddress	 => oam_rd_addr,
 		rdclock	 => clk50,
 		wraddress	 => oam_wr_addr,
-		wrclock	 => clk50, -- fix
-		wren	 => '0',
+		wrclock	 => raspi_sck, 
+		wren	 => wren,
 		q	 => oam_rd_dat
 	);
 
@@ -271,8 +263,8 @@ registers_inst : registers PORT MAP (
 		rdaddress	 => reg_rd_addr,
 		rdclock	 => clk50,
 		wraddress	 => reg_wr_addr,
-		wrclock	 => clk12, --fix
-		wren	 => '1',
+		wrclock	 => raspi_sck, 
+		wren	 => wren,
 		q	 => reg_rd_dat
 	);
 
@@ -281,8 +273,8 @@ tiledata_inst : tiledata PORT MAP (
 		rdaddress	 => tdat_rd_addr,
 		rdclock	 => clk50,
 		wraddress	 => tdat_wr_addr,
-		wrclock	 => clk50, -- fix
-		wren	 => '0',
+		wrclock	 => raspi_sck, 
+		wren	 => wren,
 		q	 => tdat_rd_dat
 	);
 
@@ -298,7 +290,15 @@ showspi_inst : showspi PORT MAP (
 		raspi_ss1 => raspi_ss1,   
 		raspi_mosi => raspi_mosi,  
 		raspi_miso => raspi_miso,
-		raspi_sck => raspi_sck   
+		raspi_sck => raspi_sck,
+		 oam_wr_dat => oam_wr_dat,
+		oam_wr_addr => oam_wr_addr,
+		reg_wr_dat => reg_wr_dat,
+		reg_wr_addr => reg_wr_addr,
+		tdat_wr_dat => tdat_wr_dat,
+		tdat_wr_addr => tdat_wr_addr,
+		tmap_wr_dat => tmap_wr_dat,
+		tmap_wr_addr => tmap_wr_addr
 	);
 	
 tilemapram_inst : tilemapram PORT MAP (
@@ -306,8 +306,8 @@ tilemapram_inst : tilemapram PORT MAP (
 		rdaddress	 => tmap_rd_addr,
 		rdclock	 => clk50,
 		wraddress	 => tmap_wr_addr,
-		wrclock	 => clk50,
-		wren	 => '0',
+		wrclock	 => raspi_sck,
+		wren	 => wren,
 		q	 => tmap_rd_dat
 	);
 
