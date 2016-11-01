@@ -66,7 +66,7 @@ architecture bhv of tilemap is
   BEGIN
     if cur_spr /= -1 then
 	   return SPRITE;
-	 elsif LCDC(5) = '1' and xpos >= WX and ypos >= WY then
+	 elsif LCDC(5) = '1' and xpos+7 >= WX and ypos >= WY then
 	   return WINDOW;
 	 elsif LCDC(0) = '1' then
 	   return BG;
