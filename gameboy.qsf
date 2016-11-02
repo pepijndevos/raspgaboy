@@ -161,6 +161,11 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_I2C_SDAT
 # GPIO
 #============================================================
 
+set_location_assignment PIN_AC20 -to v_sync
+set_location_assignment PIN_AH19 -to h_sync
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to v_sync
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to h_sync
+
 set_location_assignment PIN_AJ20 -to raspi_mosi
 set_location_assignment PIN_AH20 -to raspi_miso
 set_location_assignment PIN_AK21 -to raspi_sck
@@ -841,5 +846,6 @@ set_global_assignment -name QIP_FILE tilemapram.qip
 set_global_assignment -name QIP_FILE tiledata.qip
 
 set_global_assignment -name VHDL_FILE showspi.vhd
+
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -17,6 +17,8 @@ entity gameboy is
 		 HEX0, HEX1,
 		 HEX2, HEX3,
 		 HEX4, HEX5  : OUT std_logic_vector(6 DOWNTO 0);
+		 v_sync      : out STD_LOGIC;
+		 h_sync      : out STD_LOGIC;
 		 raspi_ss0   : in  STD_LOGIC;
 	    raspi_ss1   : in  STD_LOGIC;
        raspi_mosi  : in  STD_LOGIC;
@@ -202,6 +204,9 @@ VGA_SYNC_N <= '0';
 reset <= KEY(0);
 ahrst <= not reset;
 wren <= not raspi_ss0;
+
+h_sync <= '1' when col > 460 and row/3 /= (row+1)/3 else '0';
+v_sync <= '1' when row > 420 else '0';
 
 process (clk25)  
 begin  
