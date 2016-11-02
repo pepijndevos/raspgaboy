@@ -17,6 +17,8 @@ entity gameboy is
 		 HEX0, HEX1,
 		 HEX2, HEX3,
 		 HEX4, HEX5  : OUT std_logic_vector(6 DOWNTO 0);
+		 v_sync      : out STD_LOGIC;
+		 h_sync      : out STD_LOGIC;
 		 raspi_ss0   : in  STD_LOGIC;
 	    raspi_ss1   : in  STD_LOGIC;
        raspi_mosi  : in  STD_LOGIC;
@@ -61,8 +63,6 @@ signal tmap_wr_addr : std_logic_vector (10 downto 0); -- 2k
 signal pixel : std_logic_vector (1 downto 0);
 signal row     : integer range 0 to 1000;
 signal col     : integer range 0 to 1000;
-signal row_mul : integer range 0 to 1000;
-signal col_mul : integer range 0 to 1000;
 signal dispen  : std_logic;
 signal wren    : std_logic;
 
@@ -188,8 +188,8 @@ COMPONENT tilemap is
 		 tmap_rd_dat : in std_logic_vector (7 downto 0); -- 1 bytes
 		 tmap_rd_addr : out std_logic_vector (10 downto 0);
 		 
-		 xpos    : in integer range 0 to 1000;
-		 ypos    : in integer range 0 to 1000;
+		 xpos_in    : in integer range 0 to 1000;
+		 ypos_in    : in integer range 0 to 1000;
 		 pixel   : out std_logic_vector(1 downto 0)
 		 );
 END COMPONENT;
@@ -222,9 +222,10 @@ VGA_BLANK_N <='1' ;
 VGA_SYNC_N <= '0';
 reset <= KEY(0);
 ahrst <= not reset;
-col_mul <= col/2;
-row_mul <= row/2;
 wren <= not raspi_ss0;
+
+h_sync <= '1' when col > 460 and row/3 /= (row+1)/3 else '0';
+v_sync <= '1' when row > 420 else '0';
 
 process (clk25)  
 begin  
@@ -282,8 +283,8 @@ tilemap_inst : tilemap PORT MAP (
   tdat_rd_addr => tdat_rd_addr,
   tmap_rd_dat => tmap_rd_dat,
   tmap_rd_addr => tmap_rd_addr,
-  xpos => col_mul,
-  ypos => row_mul,
+  xpos_in => col,
+  ypos_in => row,
   pixel => pixel);
 
 oam_inst : oam PORT MAP (

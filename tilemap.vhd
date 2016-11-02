@@ -3,7 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity tilemap is
-  generic(xoffset : integer := 100;
+  generic(xoffset : integer := 0;
           yoffset : integer := 0;
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
@@ -22,8 +22,8 @@ entity tilemap is
 		 tmap_rd_dat : in std_logic_vector (7 downto 0); -- 1 bytes
 		 tmap_rd_addr : out std_logic_vector (10 downto 0);
 
-		 xpos    : in integer range 0 to 1000;
-		 ypos    : in integer range 0 to 1000;
+		 xpos_in    : in integer range 0 to 1000;
+		 ypos_in    : in integer range 0 to 1000;
 		 pixel   : out std_logic_vector(1 downto 0)
 		 );
 end tilemap;
@@ -48,15 +48,13 @@ architecture bhv of tilemap is
   
   FUNCTION tile_data (tilenr:unsigned; ypos:integer; tileset:std_logic) RETURN unsigned IS
     variable tilestart: unsigned(11 downto 0);
-    variable tilerow : unsigned (2 downto 0); 
   BEGIN
-  if tileset='1' then
-    tilestart := resize(8*tilenr, tilestart'length); -- x"8000"
-  else
-    tilestart := resize(x"400" + 8*(tilenr xor x"80"), tilestart'length); -- x"8800"
-  end if; 
-    tilerow := to_unsigned(ypos,3);
-    return tilestart + tilerow;
+    if tileset='1' then
+      tilestart := resize(8*tilenr, tilestart'length); -- x"8000"
+    else
+      tilestart := resize(x"400" + 8*(tilenr xor x"80"), tilestart'length); -- x"8800"
+    end if; 
+    return tilestart + ypos;
   END tile_data;
   
   FUNCTION get_pixel_type (xpos:integer; ypos:integer;
@@ -66,7 +64,7 @@ architecture bhv of tilemap is
   BEGIN
     if cur_spr /= -1 then
 	   return SPRITE;
-	 elsif LCDC(5) = '1' and xpos >= WX and ypos >= WY then
+	 elsif LCDC(5) = '1' and xpos+7 >= WX and ypos >= WY then
 	   return WINDOW;
 	 elsif LCDC(0) = '1' then
 	   return BG;
@@ -112,6 +110,8 @@ architecture bhv of tilemap is
 --  Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
 	signal SPF	     : std_logic_vector(7 downto 0);
 	
+   signal xpos       : integer range 0 to 1000;
+	signal ypos       : integer range 0 to 1000;
 	signal bgx        : integer range -255 to 1000;
 	signal bgy        : integer range -255 to 1000;
 	signal windowx    : integer range -255 to 1000;
@@ -126,12 +126,20 @@ architecture bhv of tilemap is
 	signal scrncol    : integer range 0 to 7;
 	signal sprtcol    : integer range 0 to 7;
 	
+   signal tilerow    : integer range 0 to 7;
+	signal windrow    : integer range 0 to 7;
+	signal scrnrow    : integer range 0 to 7;
+	signal sprtrow    : integer range 0 to 15;
+	
 	signal drawing    : boolean;
    signal tile       : std_logic_vector(15 downto 0);
 	signal pixel_type : pixel_t;
 	signal sprite_lst : sprite_t;
 	signal cur_sprite : integer range -1 to 9;
 begin
+  xpos <= xpos_in/4;
+  ypos <= ypos_in/3;
+  
   drawing <= xpos >= xoffset and xpos < xoffset+screen_width and
 	          ypos >= yoffset and ypos < yoffset+screen_height;
   cur_sprite <= get_current_sprite(screenx, sprite_lst);
@@ -139,8 +147,8 @@ begin
 
   screenx <= xpos-xoffset;
   screeny <= ypos-yoffset;
-  bgx <= screenx+SCX;
-  bgy <= screeny+SCY;
+  bgx <= (screenx+SCX) mod 256;
+  bgy <= (screeny+SCY) mod 256;
   windowx <= screenx-WX+7;
   windowy <= screeny-WY;
   
@@ -155,29 +163,38 @@ begin
 			
   spritex <= screenx-SPX+8;
   spritey <= screeny-SPY+16;
-			
+  
   tilecol <= bgx mod 8;
   windcol <= windowx mod 8;
   scrncol <= screenx mod 8;
   sprtcol <= spritex mod 8;
+  
+  tilerow <= bgy mod 8;
+  windrow <= windowy mod 8;
+  scrnrow <= screeny mod 8;
+  sprtrow <= spritey mod 16 when LCDC(2) = '1' else spritey mod 8;
   
   process(pixel_type, bgx, bgy, windowx, windowy, LCDC, SPN, spritey)
   begin
     case pixel_type is
         when BG =>
 		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(bgx+1, bgy, LCDC(3)));
-			 tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), bgy, LCDC(4)));
+			 tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), tilerow, LCDC(4)));
         when WINDOW =>
 		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(windowx+1, windowy, LCDC(6)));
-			 tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), windowy, LCDC(4)));
+			 tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), windrow, LCDC(4)));
         when SPRITE =>
-		    tdat_rd_addr <= std_logic_vector(tile_data(SPN, spritey, '1')); -- x"8000"
+		    tmap_rd_addr <= (others => '0');
+		    tdat_rd_addr <= std_logic_vector(tile_data(SPN, sprtrow, '1')); -- x"8000"
         when BLANK =>
+		    tmap_rd_addr <= (others => '0');
+			 tdat_rd_addr <= (others => '0');
     end case;
   end process;
   tile <= tdat_rd_dat;
 
 process (clk, rst)
+variable size : integer range 0 to 16;
 variable sprite_counter : integer range 0 to 9;
 begin
   if(rst = '0') then
@@ -208,34 +225,39 @@ begin
 
 	 if ypos >= yoffset and ypos < yoffset+screen_height then
 		case xpos is
-			when 0  =>
+			when 160  =>
 			  reg_rd_addr<=x"40";
 			  oam_rd_addr<=(others=>'0');
 			  sprite_counter:=0;
 			  sprite_lst <= (others => (others => '0'));
-			when 1  =>
+			when 161  =>
 			  LCDC<=reg_rd_dat;
 			  reg_rd_addr<=x"42";
-			when 2  =>
+			when 162  =>
 			  SCY<=to_integer(unsigned(reg_rd_dat));
 			  reg_rd_addr<=x"43";
-			when 3  =>
+			when 163  =>
 			  SCX<=to_integer(unsigned(reg_rd_dat));
 			  reg_rd_addr<=x"4A";
-			when 4  =>
+			when 164  =>
 			  WY<=to_integer(unsigned(reg_rd_dat));
 			  reg_rd_addr<=x"4B";
-			when 5  =>
+			when 165  =>
 			  WX<=to_integer(unsigned(reg_rd_dat));
 			when others => 
 		end case;
-		if xpos > 0 and xpos < 41 then
-		  if screeny >= unsigned(oam_rd_dat(7 downto 0))-16 and
-		     screeny < unsigned(oam_rd_dat(7 downto 0))-8 then
+		if LCDC(2) = '0' then -- 8x8 or 8x16 sprites
+		  size := 8;
+		else
+		  size := 16;
+		end if;
+		if xpos > 160 and xpos < 201 then
+		  if (ypos_in+1)/3-yoffset >= unsigned(oam_rd_dat(7 downto 0))-16 and
+		     (ypos_in+1)/3-yoffset < unsigned(oam_rd_dat(7 downto 0))-16+size then
 		    sprite_lst(sprite_counter) <= oam_rd_dat;
 			 sprite_counter := sprite_counter+1;
 		  end if;
-		  oam_rd_addr <= std_logic_vector(to_unsigned(xpos, 6));
+		  oam_rd_addr <= std_logic_vector(to_unsigned(xpos-160, 6));
 		end if;
 	 end if;
   end if;

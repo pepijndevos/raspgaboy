@@ -93,12 +93,12 @@ BEGIN
       END IF;
       
       --set pixel coordinates
-      IF(h_count < h_pixels) THEN  --horiztonal display time
+      --IF(h_count < h_pixels) THEN  --horiztonal display time
         column <= h_count;         --set horiztonal pixel coordinate
-      END IF;
-      IF(v_count < v_pixels) THEN  --vertical display time
+      --END IF;
+      --IF(v_count < v_pixels) THEN  --vertical display time
         row <= v_count;            --set vertical pixel coordinate
-      END IF;
+      --END IF;
 
       --set display enable output
       IF(h_count < h_pixels AND v_count < v_pixels) THEN  --display time
