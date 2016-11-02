@@ -251,7 +251,7 @@ begin
 		end if;
 
 	end if;
-  end if;
+  
 end process;
 
 rom1_inst : rom1 PORT MAP (
