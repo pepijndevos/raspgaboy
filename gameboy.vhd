@@ -21,7 +21,9 @@ entity gameboy is
 	    raspi_ss1   : in  STD_LOGIC;
        raspi_mosi  : in  STD_LOGIC;
        raspi_miso  : out STD_LOGIC;
-       raspi_sck   : in  STD_LOGIC);
+       raspi_sck   : in  STD_LOGIC
+		 
+	   );
 end gameboy;
 
 architecture Behavioral of gameboy is
@@ -31,6 +33,10 @@ signal clk12              : std_logic;
 signal clk50              : std_logic;
 signal reset   : std_logic;
 signal ahrst   : std_logic;
+signal redofpixel :  std_LOGIC_VECTOR(7 downto 0);
+signal greenofpixel :  std_LOGIC_VECTOR(7 downto 0);
+signal blueofpixel :  std_LOGIC_VECTOR(7 downto 0)	;	 
+
 
 signal oam_rd_dat : std_logic_vector (31 downto 0); -- 4 bytes
 signal oam_rd_addr : std_logic_vector (5 downto 0); -- 64 sprites (40 used)
@@ -61,6 +67,19 @@ signal dispen  : std_logic;
 signal wren    : std_logic;
 
 -- memory modules
+component rom1 
+	PORT
+	(
+		CLOCK_50  : in std_logic;
+      reset   : in std_logic;
+		col : in  integer;
+		row : in integer;
+		redofpixel : out std_logic_vector(7 downto 0);
+		greenofpixel : out std_logic_vector(7 downto 0);
+		blueofpixel : out std_logic_vector(7 downto 0)
+	);
+end component;
+
 component oam
 	PORT
 	(
@@ -150,7 +169,7 @@ COMPONENT pll
 END COMPONENT;
 
 COMPONENT tilemap is
-  generic(xoffset : integer := 100;
+  generic(xoffset : integer := 0;
           yoffset : integer := 0;
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
@@ -210,20 +229,39 @@ wren <= not raspi_ss0;
 process (clk25)  
 begin  
   if rising_edge(clk25) then
-    if dispen='1' then
+	
+		if dispen='1' then
 
-      --here you paint!!
-       VGA_R <= pixel & pixel & pixel & pixel;
-       VGA_G <= pixel & pixel & pixel & pixel;
-       VGA_B <= pixel & pixel & pixel & pixel;
+			--here you paint!!'
+			if row < 420 then 
 
-    else
-       VGA_R <= "00000000";
-       VGA_G <="00000000";
-       VGA_B <= "00000000";
-    end if;
+			VGA_R <= pixel & pixel & pixel & pixel;
+			VGA_G <= pixel & pixel & pixel & pixel;
+			VGA_B <= pixel & pixel & pixel & pixel;
+			else
+				VGA_R <= redofpixel;
+				VGA_G <= blueofpixel;
+				VGA_B <= greenofpixel;
+			end if;
+		else
+			VGA_R <= "00000000";
+			VGA_G <="00000000";
+			VGA_B <= "00000000";
+		end if;
+
+	end if;
   end if;
 end process;
+
+rom1_inst : rom1 PORT MAP (
+	    CLOCK_50  =>  CLOCK_50,
+        reset   =>reset,
+		col => col,
+		row => row, 
+		redofpixel => redofpixel,
+		greenofpixel => greenofpixel,
+		blueofpixel => blueofpixel
+);
 
 pll_inst : pll PORT MAP (
   refclk => CLOCK_50,
