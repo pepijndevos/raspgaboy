@@ -129,6 +129,7 @@ architecture bhv of tilemap is
    signal tilerow    : integer range 0 to 7;
 	signal windrow    : integer range 0 to 7;
 	signal scrnrow    : integer range 0 to 7;
+	signal sprtrowi   : integer range 0 to 15;
 	signal sprtrow    : integer range 0 to 15;
 	
 	signal drawing    : boolean;
@@ -136,6 +137,7 @@ architecture bhv of tilemap is
 	signal pixel_type : pixel_t;
 	signal sprite_lst : sprite_t;
 	signal cur_sprite : integer range -1 to 9;
+	signal sprite_size : integer range  8 to 16;
 begin
   xpos <= xpos_in/4;
   ypos <= ypos_in/3;
@@ -163,22 +165,24 @@ begin
 			
   spritex <= screenx-SPX+8;
   spritey <= screeny-SPY+16;
+  sprite_size <= 16 when LCDC(2) = '1' else 8; -- 8x8 or 8x16 sprites
   
   tilecol <= bgx mod 8;
   windcol <= windowx mod 8;
   scrncol <= screenx mod 8;
   sprtcol <= spritex mod 8;
   
-  tilerow <= bgy mod 8;
-  windrow <= windowy mod 8;
-  scrnrow <= screeny mod 8;
-  sprtrow <= spritey mod 16 when LCDC(2) = '1' else spritey mod 8;
+  tilerow  <= bgy mod 8;
+  windrow  <= windowy mod 8;
+  scrnrow  <= screeny mod 8;
+  sprtrowi <= spritey mod sprite_size;
+  sprtrow  <= sprtrowi when SPF(6) = '0' else sprite_size-1-sprtrowi;
   
   process(pixel_type, bgx, bgy, windowx, windowy, LCDC, SPN, spritey)
   begin
     case pixel_type is
         when BG =>
-		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(bgx+1, bgy, LCDC(3)));
+		    tmap_rd_addr <= std_logic_vector(tile_nr_addr((bgx+1) mod 256, bgy, LCDC(3)));
 			 tdat_rd_addr <= std_logic_vector(tile_data(unsigned(tmap_rd_dat), tilerow, LCDC(4)));
         when WINDOW =>
 		    tmap_rd_addr <= std_logic_vector(tile_nr_addr(windowx+1, windowy, LCDC(6)));
@@ -194,7 +198,6 @@ begin
   tile <= tdat_rd_dat;
 
 process (clk, rst)
-variable size : integer range 0 to 16;
 variable sprite_counter : integer range 0 to 9;
 begin
   if(rst = '0') then
@@ -246,14 +249,9 @@ begin
 			  WX<=to_integer(unsigned(reg_rd_dat));
 			when others => 
 		end case;
-		if LCDC(2) = '0' then -- 8x8 or 8x16 sprites
-		  size := 8;
-		else
-		  size := 16;
-		end if;
 		if xpos > 160 and xpos < 201 then
 		  if (ypos_in+1)/3-yoffset >= unsigned(oam_rd_dat(7 downto 0))-16 and
-		     (ypos_in+1)/3-yoffset < unsigned(oam_rd_dat(7 downto 0))-16+size then
+		     (ypos_in+1)/3-yoffset < unsigned(oam_rd_dat(7 downto 0))-16+sprite_size then
 		    sprite_lst(sprite_counter) <= oam_rd_dat;
 			 sprite_counter := sprite_counter+1;
 		  end if;
