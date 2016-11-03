@@ -174,6 +174,7 @@ COMPONENT tilemap is
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
   port(clk     : in std_logic;
+       fastclk : in std_logic;
        rst     : in std_logic;
 		 
 		 oam_rd_dat : in std_logic_vector (31 downto 0); -- 4 bytes
@@ -235,10 +236,9 @@ begin
 
 			--here you paint!!'
 			if row < 420 then 
-
-			VGA_R <= pixel & pixel & pixel & pixel;
-			VGA_G <= pixel & pixel & pixel & pixel;
-			VGA_B <= pixel & pixel & pixel & pixel;
+				VGA_R <= pixel & pixel & pixel & pixel;
+				VGA_G <= pixel & pixel & pixel & pixel;
+				VGA_B <= pixel & pixel & pixel & pixel;
 			else
 				VGA_R <= redofpixel;
 				VGA_G <= blueofpixel;
@@ -274,6 +274,7 @@ pll_inst : pll PORT MAP (
 
 tilemap_inst : tilemap PORT MAP (
   clk => clk12,
+  fastclk => clk50,
   rst => reset,
   oam_rd_dat => oam_rd_dat,
   oam_rd_addr => oam_rd_addr,
