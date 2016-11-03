@@ -821,7 +821,7 @@ set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to HPS_DDR3_CK_N
 #============================================================
 
 
-set_global_assignment -name LAST_QUARTUS_VERSION 16.0.0
+set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
@@ -835,7 +835,11 @@ set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_RO
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 
 
-set_global_assignment -name VHDL_FILE romport1.vhd
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+
+
+set_global_assignment -name QIP_FILE romport1.qip
 set_global_assignment -name VHDL_FILE rom1.vhd
 set_global_assignment -name SDC_FILE DE1_SoC.sdc
 set_global_assignment -name VHDL_FILE vga_controller.vhd
@@ -849,8 +853,4 @@ set_global_assignment -name QIP_FILE registers.qip
 set_global_assignment -name QIP_FILE tilemapram.qip
 set_global_assignment -name QIP_FILE tiledata.qip
 set_global_assignment -name VHDL_FILE showspi.vhd
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
-set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-
-
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

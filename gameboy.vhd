@@ -70,7 +70,7 @@ signal wren    : std_logic;
 component rom1 
 	PORT
 	(
-		CLOCK_50  : in std_logic;
+		clk25  : in std_logic;
       reset   : in std_logic;
 		col : in  integer;
 		row : in integer;
@@ -233,16 +233,16 @@ begin
 	
 		if dispen='1' then
 
-			--here you paint!!'
+			--here you paint!!
 			if row < 420 then 
 
-			VGA_R <= pixel & pixel & pixel & pixel;
-			VGA_G <= pixel & pixel & pixel & pixel;
-			VGA_B <= pixel & pixel & pixel & pixel;
+				VGA_R <= pixel & pixel & pixel & pixel;
+				VGA_G <= pixel & pixel & pixel & pixel;
+				VGA_B <= pixel & pixel & pixel & pixel;
 			else
 				VGA_R <= redofpixel;
-				VGA_G <= blueofpixel;
-				VGA_B <= greenofpixel;
+				VGA_G <= greenofpixel;
+				VGA_B <= blueofpixel;
 			end if;
 		else
 			VGA_R <= "00000000";
@@ -255,8 +255,8 @@ begin
 end process;
 
 rom1_inst : rom1 PORT MAP (
-	    CLOCK_50  =>  CLOCK_50,
-        reset   =>reset,
+	   clk25  => clk25,
+      reset   =>reset,
 		col => col,
 		row => row, 
 		redofpixel => redofpixel,
@@ -330,7 +330,7 @@ showspi_inst : showspi PORT MAP (
 		raspi_mosi => raspi_mosi,  
 		raspi_miso => raspi_miso,
 		raspi_sck => raspi_sck,
-		 oam_wr_dat => oam_wr_dat,
+		oam_wr_dat => oam_wr_dat,
 		oam_wr_addr => oam_wr_addr,
 		reg_wr_dat => reg_wr_dat,
 		reg_wr_addr => reg_wr_addr,
