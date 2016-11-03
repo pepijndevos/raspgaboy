@@ -174,6 +174,7 @@ COMPONENT tilemap is
 			 screen_width : integer := 160;
 			 screen_height : integer := 144);
   port(clk     : in std_logic;
+       fastclk : in std_logic;
        rst     : in std_logic;
 		 
 		 oam_rd_dat : in std_logic_vector (31 downto 0); -- 4 bytes
@@ -274,6 +275,7 @@ pll_inst : pll PORT MAP (
 
 tilemap_inst : tilemap PORT MAP (
   clk => clk12,
+  fastclk => clk50,
   rst => reset,
   oam_rd_dat => oam_rd_dat,
   oam_rd_addr => oam_rd_addr,

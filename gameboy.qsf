@@ -161,8 +161,8 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_I2C_SDAT
 # GPIO
 #============================================================
 
-set_location_assignment PIN_AC20 -to v_sync
-set_location_assignment PIN_AH19 -to h_sync
+set_location_assignment PIN_AE16 -to v_sync
+set_location_assignment PIN_AF16 -to h_sync
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to v_sync
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to h_sync
 
@@ -853,4 +853,10 @@ set_global_assignment -name QIP_FILE registers.qip
 set_global_assignment -name QIP_FILE tilemapram.qip
 set_global_assignment -name QIP_FILE tiledata.qip
 set_global_assignment -name VHDL_FILE showspi.vhd
+
+
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+
+
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
