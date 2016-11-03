@@ -145,7 +145,7 @@ begin
   
   drawing <= xpos >= xoffset and xpos < xoffset+screen_width and
 	          ypos >= yoffset and ypos < yoffset+screen_height;
-  cur_sprite <= get_current_sprite(screenx, sprite_lst);
+  cur_sprite <= get_current_sprite(screenx+1, sprite_lst);
   pixel_type <= get_pixel_type(xpos+1, ypos, WX, WY, LCDC);
 
   screenx <= xpos-xoffset;
