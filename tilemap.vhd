@@ -138,6 +138,7 @@ architecture bhv of tilemap is
 	signal sprite_lst : sprite_t;
 	signal addr_select: addrmux_t;
 	signal cur_sprite : integer range -1 to 9;
+	signal nxt_sprite : integer range -1 to 9;
 	signal sprite_size : integer range  8 to 16;
 begin
   xpos <= xpos_in/4;
@@ -145,7 +146,8 @@ begin
   
   drawing <= xpos >= xoffset and xpos < xoffset+screen_width and
 	          ypos >= yoffset and ypos < yoffset+screen_height;
-  cur_sprite <= get_current_sprite(screenx+1, sprite_lst);
+  cur_sprite <= get_current_sprite(screenx, sprite_lst);
+  nxt_sprite <= get_current_sprite(screenx+1, sprite_lst);
   pixel_type <= get_pixel_type(xpos+1, ypos, WX, WY, LCDC);
 
   screenx <= xpos-xoffset;
@@ -155,14 +157,14 @@ begin
   windowx <= screenx-WX+7;
   windowy <= screeny-WY;
   
-  SPY <= to_integer(unsigned(sprite_lst(cur_sprite)(7 downto 0)))
-         when cur_sprite /= -1 else 0;
-  SPX <= to_integer(unsigned(sprite_lst(cur_sprite)(15 downto 8)))
-         when cur_sprite /= -1 else 0;
-  SPN <= unsigned(sprite_lst(cur_sprite)(23 downto 16))
-         when cur_sprite /= -1 else x"00";
-  SPF <= sprite_lst(cur_sprite)(31 downto 24)
-         when cur_sprite /= -1 else x"00";
+  SPY <= to_integer(unsigned(sprite_lst(nxt_sprite)(7 downto 0)))
+         when nxt_sprite /= -1 else 0;
+  SPX <= to_integer(unsigned(sprite_lst(nxt_sprite)(15 downto 8)))
+         when nxt_sprite /= -1 else 0;
+  SPN <= unsigned(sprite_lst(nxt_sprite)(23 downto 16))
+         when nxt_sprite /= -1 else x"00";
+  SPF <= sprite_lst(nxt_sprite)(31 downto 24)
+         when nxt_sprite /= -1 else x"00";
 			
   spritex <= screenx-SPX+8;
   spritey <= screeny-SPY+16;
@@ -210,7 +212,7 @@ begin
       addr_select <= TILESEL;
     elsif rising_edge(fastclk) then
       subpx := xpos_in mod 4;
-	   if cur_sprite /= -1 and subpx < 2 then
+	   if nxt_sprite /= -1 and subpx < 2 then
 	     addr_select <= SPRITESEL;
 	   else
 	     addr_select <= TILESEL;
@@ -237,9 +239,11 @@ begin
   elsif rising_edge(clk) then
 
     if drawing then
-	   if SPF(5) = '0' then -- check horizontal flip
+	   --if SPF(5) = '0' then -- check horizontal flip
+		if sprite_lst(cur_sprite)(29) = '0' then
 		  pixel_tmp := (sprite(15-sprtcol) & sprite(7-sprtcol));
 		else
+		  --pixel_tmp := (sprite(15-sprtcol) & sprite(7-sprtcol));
 		  pixel_tmp := (sprite(8+sprtcol) & sprite(sprtcol));
 		end if;
 	   if cur_sprite /= -1 and pixel_tmp /= "00" then
