@@ -82,6 +82,29 @@ architecture bhv of tilemap is
 	 end loop;
 	 return -1; -- where is my option type
   END get_current_sprite;
+
+  FUNCTION get_palette_color (pixel_tmp:std_logic_vector(1 downto 0); palette_type:std_logic) RETURN std_logic_vector IS
+  BEGIN
+    if palette_type = '0' then
+	case pixel_tmp is
+	when "00" => RETURN "00";
+	when "01" => RETURN "01";
+	when "10" => RETURN "10";
+	when "11" => RETURN "11";	
+	when others => RETURN "00";
+	END CASE; 
+    else 
+	case pixel_tmp is
+	when "00" => RETURN "11";
+	when "01" => RETURN "10";
+	when "10" => RETURN "01";
+	when "11" => RETURN "00";
+	when others => RETURN "00";
+	END CASE;
+    end if;
+  end get_palette_color;
+
+
  
 --  Bit 7 - LCD Display Enable             (0=Off, 1=On)
 --  Bit 6 - Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
@@ -243,13 +266,13 @@ begin
 		  pixel_tmp := (sprite(8+sprtcol) & sprite(sprtcol));
 		end if;
 	   if cur_sprite /= -1 and pixel_tmp /= "00" then
-		  pixel <= not pixel_tmp;
+		  pixel <= not get_palette_color(pixel_tmp,spf(4));
 		else
 	     case pixel_type is
           when BG =>
-		      pixel <= not (tile(15-tilecol) & tile(7-tilecol));
+		      pixel <= not   get_palette_color((tile(15-tilecol) & tile(7-tilecol)),'0');
           when WINDOW =>
-		      pixel <= not (tile(15-windcol) & tile(7-windcol));
+		      pixel <= not   get_palette_color((tile(15-windcol) & tile(7-windcol)),'0');
           when BLANK =>
 		      pixel <= "11";
         end case;
