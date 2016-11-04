@@ -83,25 +83,16 @@ architecture bhv of tilemap is
 	 return -1; -- where is my option type
   END get_current_sprite;
 
-  FUNCTION get_palette_color (pixel_tmp:std_logic_vector(1 downto 0); palette_type:std_logic) RETURN std_logic_vector IS
+  FUNCTION get_palette_color (pixel_tmp:std_logic_vector(1 downto 0); palette_type:std_logic_vector(7 downto 0)) RETURN std_logic_vector IS
+  
   BEGIN
-    if palette_type = '0' then
 	case pixel_tmp is
-	when "00" => RETURN "00";
-	when "01" => RETURN "01";
-	when "10" => RETURN "10";
-	when "11" => RETURN "11";	
-	when others => RETURN "00";
+	when "00" => RETURN palette_type(1 downto 0);
+	when "01" => RETURN palette_type(3 downto 2);
+	when "10" => RETURN palette_type(5 downto 4);
+	when "11" => RETURN palette_type(7 downto 6);	
+	when others => RETURN "00";    -- also the case for when "00" because lower two bits are not used (transparent)
 	END CASE; 
-    else 
-	case pixel_tmp is
-	when "00" => RETURN "11";
-	when "01" => RETURN "10";
-	when "10" => RETURN "01";
-	when "11" => RETURN "00";
-	when others => RETURN "00";
-	END CASE;
-    end if;
   end get_palette_color;
 
 
@@ -115,6 +106,7 @@ architecture bhv of tilemap is
 --  Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
 --  Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
 	signal LCDC	     : std_logic_vector(7 downto 0);
+	signal bbp       : std_logic_vector(7 downto 0);
 	signal SCY	     : integer range 0 to 255;
 	signal SCX	     : integer range 0 to 255;
 	signal WY		     : integer range 0 to 255;
@@ -131,6 +123,8 @@ architecture bhv of tilemap is
 --  Bit3   Tile VRAM-Bank  **CGB Mode Only**     (0=Bank 0, 1=Bank 1)
 --  Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
 	signal SPF	     : std_logic_vector(7 downto 0);
+	signal obp0	     : std_logic_vector(7 downto 0);
+	signal obp1      : std_logic_vector(7 downto 0);
 	
    signal xpos       : integer range 0 to 1000;
 	signal ypos       : integer range 0 to 1000;
@@ -266,13 +260,17 @@ begin
 		  pixel_tmp := (sprite(8+sprtcol) & sprite(sprtcol));
 		end if;
 	   if cur_sprite /= -1 and pixel_tmp /= "00" then
-		  pixel <= not get_palette_color(pixel_tmp,spf(4));
+			if spf(4) = '0' then 
+		  pixel <= not get_palette_color(pixel_tmp,obp0);
+		   else 
+		  pixel <= not get_palette_color(pixel_tmp,obp1);
+		  end if;
 		else
 	     case pixel_type is
           when BG =>
-		      pixel <= not   get_palette_color((tile(15-tilecol) & tile(7-tilecol)),'0');
+		      pixel <= not   get_palette_color((tile(15-tilecol) & tile(7-tilecol)),bbp);
           when WINDOW =>
-		      pixel <= not   get_palette_color((tile(15-windcol) & tile(7-windcol)),'0');
+		      pixel <= not   get_palette_color((tile(15-windcol) & tile(7-windcol)),bbp);
           when BLANK =>
 		      pixel <= "11";
         end case;
@@ -302,6 +300,16 @@ begin
 			  reg_rd_addr<=x"4B";
 			when 165  =>
 			  WX<=to_integer(unsigned(reg_rd_dat));
+			  reg_rd_addr<=x"47";
+			when 166 =>
+			   BBP <= reg_rd_dat;
+			   reg_rd_addr <= x"48";
+			when 167 =>
+			  OBP0 <= reg_rd_dat;
+			  reg_rd_addr <= x"49";
+			when 168 => 
+				OBP1 <= reg_rd_dat;
+			
 			when others => 
 		end case;
 		if xpos > 160 and xpos < 201 then
