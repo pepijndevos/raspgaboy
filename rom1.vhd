@@ -1,7 +1,7 @@
  library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
 
 entity rom1 is
  port(clk25  : in std_logic;
@@ -24,18 +24,12 @@ COMPONENT romport1
   );
 END COMPONENT;
 
---signal clk25 : std_logic;  
-
---signal clka  :  std_logic;
---signal addra :  std_logic_vector (13 DOWNTO 0); 
---signal douta : std_logic_vector (23 downto 0); 
-
 
 signal addr_rom : STD_LOGIC_VECTOR(13 DOWNTO 0) := (others => '0');
 signal data_rom : STD_LOGIC_VECTOR(23 DOWNTO 0) := (others => '0');
 
---signal row,col : integer := 0;
-
+type lut_t is array (integer range 0 to 16) of signed(7 downto 0);
+constant lut : lut_t := (x"00", x"0c", x"19", x"25", x"31", x"3c", x"47", x"51", x"5a", x"62", x"6a", x"70", x"75", x"7a", x"7d", x"7e", x"7f");
 
 begin
 
@@ -46,18 +40,36 @@ begin
 process(clk25,addr_rom)
 --variable counter,donepixel,nextcol : integer := 0 ;
 variable temp : unsigned(13 downto 0);
+variable idx : integer range 0 to 16;
+variable counter : unsigned (16 downto 0);
 begin
     if rising_edge(clk25) then
 			
-		if col <= 201 and row> 420 then 
-			redofpixel <= data_rom(7 downto 0);
+		if col < 200 and row> 432 then 
+			blueofpixel <= data_rom(7 downto 0);
 			greenofpixel <= data_rom (15 downto 8);
-			blueofpixel <= data_rom (23 downto 16);
-			temp := unsigned((addr_rom) + "00000000000001");
+			redofpixel <= data_rom (23 downto 16);
+			temp := unsigned(addr_rom) + 1;
 			addr_rom <= std_logic_vector (temp) ;
-		end if;
-		if row >480 then 
-			addr_rom <= "11111111111111";
+		elsif row > 432 then
+		  idx := col/8+to_integer(counter(16 downto 12));
+		  case (idx mod 64)/16 is
+          when 0 => redofpixel <= std_logic_vector(127+lut(idx mod 16));
+			         greenofpixel <= std_logic_vector(127+lut(idx mod 16));
+		    when 1 => redofpixel <= std_logic_vector(127+lut(16-(idx mod 16)));
+			         greenofpixel <= std_logic_vector(127+lut(16-(idx mod 16)));
+		    when 2 => redofpixel <= std_logic_vector(127-lut(idx mod 16));
+			         greenofpixel <= std_logic_vector(127-lut(idx mod 16));
+		    when 3 => redofpixel <= std_logic_vector(127-lut(16-(idx mod 16)));
+			         greenofpixel <= std_logic_vector(127-lut(16-(idx mod 16)));
+			 when others =>
+        end case;
+		  blueofpixel   <= "11111111";
+	   end if;
+		if row = 0 then 
+			--addr_rom <= "11111111111111"
+			addr_rom <= "00000000000000";
+			counter := counter + 1;
 		end if;
 --			redofpixel <= "00000000";
 --			greenofpixel <= "00000000";

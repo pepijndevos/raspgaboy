@@ -226,7 +226,7 @@ ahrst <= not reset;
 wren <= not raspi_ss0;
 
 h_sync <= '1' when col > 460 and row/3 /= (row+1)/3 else '0';
-v_sync <= '1' when row > 420 else '0';
+v_sync <= '1' when row > 432 else '0';
 
 process (clk25)  
 begin  
@@ -235,7 +235,7 @@ begin
 		if dispen='1' then
 
 			--here you paint!!
-			if row < 420 then 
+			if row <= 432 then 
 
 				VGA_R <= pixel & pixel & pixel & pixel;
 				VGA_G <= pixel & pixel & pixel & pixel;
@@ -246,8 +246,9 @@ begin
 				VGA_B <= blueofpixel;
 			end if;
 		else
+			--VGA_R <= "00000000";
 			VGA_R <= "00000000";
-			VGA_G <="00000000";
+			VGA_G <= "00000000";
 			VGA_B <= "00000000";
 		end if;
 
