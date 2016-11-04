@@ -63,9 +63,9 @@ architecture bhv of tilemap is
 							  WX:integer; WY: integer;
 							  LCDC:std_logic_vector) RETURN pixel_t IS
   BEGIN
-    if LCDC(5) = '1' and xpos+7 >= WX and ypos >= WY then
+    if LCDC(7) = '1' and LCDC(5) = '1' and xpos+7 >= WX and ypos >= WY then
 	   return WINDOW;
-	 elsif LCDC(0) = '1' then
+	 elsif LCDC(7) = '1' and LCDC(0) = '1' then
 	   return BG;
 	 else
 	   return BLANK;
@@ -151,7 +151,8 @@ architecture bhv of tilemap is
 	signal drawing    : boolean;
    signal tile       : std_logic_vector(15 downto 0);
    signal sprite     : std_logic_vector(15 downto 0);
-	signal pixel_type : pixel_t;
+	signal cur_type : pixel_t;
+	signal nxt_type : pixel_t;
 	signal sprite_lst : sprite_t;
 	signal addr_select: addrmux_t;
 	signal cur_sprite : integer range -1 to 9;
@@ -165,7 +166,8 @@ begin
 	          ypos >= yoffset and ypos < yoffset+screen_height;
   cur_sprite <= get_current_sprite(screenx, sprite_lst);
   nxt_sprite <= get_current_sprite(screenx+1, sprite_lst);
-  pixel_type <= get_pixel_type(xpos+1, ypos, WX, WY, LCDC);
+  cur_type <= get_pixel_type(xpos, ypos, WX, WY, LCDC);
+  nxt_type <= get_pixel_type(xpos+1, ypos, WX, WY, LCDC);
 
   screenx <= xpos-xoffset;
   screeny <= ypos-yoffset;
@@ -174,10 +176,11 @@ begin
   windowx <= screenx-WX+7;
   windowy <= screeny-WY;
   
-  SPY <= to_integer(unsigned(sprite_lst(nxt_sprite)(7 downto 0)))
-         when nxt_sprite /= -1 else 0;
-  SPX <= to_integer(unsigned(sprite_lst(nxt_sprite)(15 downto 8)))
-         when nxt_sprite /= -1 else 0;
+  SPY <= to_integer(unsigned(sprite_lst(cur_sprite)(7 downto 0)))
+         when cur_sprite /= -1 else 0;
+  SPX <= to_integer(unsigned(sprite_lst(cur_sprite)(15 downto 8)))
+         when cur_sprite /= -1 else 0;
+			
   SPN <= unsigned(sprite_lst(nxt_sprite)(23 downto 16))
          when nxt_sprite /= -1 else x"00";
   SPF <= sprite_lst(nxt_sprite)(31 downto 24)
@@ -198,12 +201,12 @@ begin
   sprtrowi <= spritey mod sprite_size;
   sprtrow  <= sprtrowi when SPF(6) = '0' else sprite_size-1-sprtrowi;
   
-  process(pixel_type, tmap_rd_dat, addr_select, LCDC, bgx, bgy, windowx, windowy, SPN, sprtrow)
+  process(nxt_type, tmap_rd_dat, addr_select, LCDC, bgx, bgy, windowx, windowy, SPN, sprtrow)
   variable tile_addr : std_logic_vector (11 downto 0);
   variable sprite_addr : std_logic_vector (11 downto 0);
   begin
     sprite_addr := std_logic_vector(tile_data(SPN, sprtrow, '1')); -- x"8000"
-    case pixel_type is
+    case nxt_type is
         when BG =>
 		    tmap_rd_addr <= std_logic_vector(tile_nr_addr((bgx+1) mod 256, bgy, LCDC(3)));
 			 tile_addr    := std_logic_vector(tile_data(unsigned(tmap_rd_dat), tilerow, LCDC(4)));
@@ -257,10 +260,9 @@ begin
 
     if drawing then
 	   --if SPF(5) = '0' then -- check horizontal flip
-		if sprite_lst(cur_sprite)(29) = '0' then
+		if cur_sprite /= -1 and sprite_lst(cur_sprite)(29) = '0' then
 		  pixel_tmp := (sprite(15-sprtcol) & sprite(7-sprtcol));
-		else
-		  --pixel_tmp := (sprite(15-sprtcol) & sprite(7-sprtcol));
+		elsif cur_sprite /= -1 then
 		  pixel_tmp := (sprite(8+sprtcol) & sprite(sprtcol));
 		end if;
 	   if cur_sprite /= -1 and pixel_tmp /= "00" then
@@ -270,7 +272,7 @@ begin
 		  pixel <= not get_palette_color(pixel_tmp,obp1);
 		  end if;
 		else
-	     case pixel_type is
+	     case cur_type is
           when BG =>
 		      pixel <= not   get_palette_color((tile(15-tilecol) & tile(7-tilecol)),bbp);
           when WINDOW =>
