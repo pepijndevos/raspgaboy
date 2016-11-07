@@ -266,7 +266,8 @@ begin
 		  pixel_tmp := (sprite(8+sprtcol) & sprite(sprtcol));
 		end if;
 	   if cur_sprite /= -1 and pixel_tmp /= "00" then
-			if spf(4) = '0' then 
+			--if spf(4) = '0' then 
+			if sprite_lst(cur_sprite)(28) = '0' then 
 		  pixel <= not get_palette_color(pixel_tmp,obp0);
 		   else 
 		  pixel <= not get_palette_color(pixel_tmp,obp1);
@@ -318,7 +319,7 @@ begin
 			
 			when others => 
 		end case;
-		if xpos > 160 and xpos < 201 then
+		if xpos > 160 and xpos < 201 and LCDC(1) = '1' then
 		  if (ypos_in+1)/3-yoffset >= unsigned(oam_rd_dat(7 downto 0))-16 and
 		     (ypos_in+1)/3-yoffset < unsigned(oam_rd_dat(7 downto 0))-16+sprite_size then
 		    sprite_lst(sprite_counter) <= oam_rd_dat;
