@@ -310,13 +310,13 @@ begin
 	   if cur_sprite /= -1 and pixel_tmp /= "00" then
 			if spf(4) = '0' then 
 				--if color_on = 1 then 
-					pixel <= not std_logic_vector(get_palette_color_colorobj0(pixel_tmp,lutobj0));
+					pixel <=  std_logic_vector(get_palette_color_colorobj0(pixel_tmp,lutobj0));
 				--else 
 				--	pixel <= not get_palette_color(pixel_tmp,obp0);
 				--end if;
 		   else 
 				--if color_on = 1 then 
-					pixel <= not std_logic_vector(get_palette_color_colorobj1(pixel_tmp,lutobj1));
+					pixel <=  std_logic_vector(get_palette_color_colorobj1(pixel_tmp,lutobj1));
 				--else 
 					--pixel <= not get_palette_color(pixel_tmp,obp1);
 				--end if;
@@ -326,13 +326,13 @@ begin
 	     case pixel_type is
           when BG =>
 				--if color_on = 1 then 
-					pixel <= not std_logic_vector(get_palette_color_colorbbp(pixel_tmp,lutbbp));
+					pixel <=  std_logic_vector(get_palette_color_colorbbp((tile(15-tilecol) & tile(7-tilecol)),lutbbp));
 				--else 
 					 --pixel <= not   get_palette_color((tile(15-tilecol) & tile(7-tilecol)),bbp);
 				--end if;
           when WINDOW =>
 				--if color_on = 1 then 
-					pixel <= not std_logic_vector(get_palette_color_colorbbp(pixel_tmp,lutbbp));
+					pixel <=  std_logic_vector(get_palette_color_colorbbp((tile(15-windcol) & tile(7-windcol)),lutbbp));
 				--else 
 					-- pixel <= not   get_palette_color((tile(15-windcol) & tile(7-windcol)),bbp);
 				--end if;
