@@ -37,7 +37,8 @@ signal reset   : std_logic;
 signal ahrst   : std_logic;
 signal redofpixel :  std_LOGIC_VECTOR(7 downto 0);
 signal greenofpixel :  std_LOGIC_VECTOR(7 downto 0);
-signal blueofpixel :  std_LOGIC_VECTOR(7 downto 0)	;	 
+signal blueofpixel :  std_LOGIC_VECTOR(7 downto 0)	;	
+signal blackofpixel : std_logic; 
 
 
 signal oam_rd_dat : std_logic_vector (31 downto 0); -- 4 bytes
@@ -76,7 +77,8 @@ component rom1
 		row : in integer;
 		redofpixel : out std_logic_vector(7 downto 0);
 		greenofpixel : out std_logic_vector(7 downto 0);
-		blueofpixel : out std_logic_vector(7 downto 0)
+		blueofpixel : out std_logic_vector(7 downto 0);
+		blackofpixel : out std_logic
 	);
 end component;
 
@@ -236,17 +238,17 @@ begin
 
 			--here you paint!!
 			if row <= 432 then 
-
 				VGA_R <= pixel(23 downto 16);
 				VGA_G <= pixel(15 downto 8);
 				VGA_B <= pixel(7 downto 0);
 			else
+				
 				VGA_R <= redofpixel;
 				VGA_G <= greenofpixel;
 				VGA_B <= blueofpixel;
+
 			end if;
 		else
-			--VGA_R <= "00000000";
 			VGA_R <= "00000000";
 			VGA_G <= "00000000";
 			VGA_B <= "00000000";
@@ -263,7 +265,8 @@ rom1_inst : rom1 PORT MAP (
 		row => row, 
 		redofpixel => redofpixel,
 		greenofpixel => greenofpixel,
-		blueofpixel => blueofpixel
+		blueofpixel => blueofpixel,
+		blackofpixel => blackofpixel
 );
 
 pll_inst : pll PORT MAP (
