@@ -35,8 +35,8 @@ architecture bhv of tilemap is
   type sprite_t is array(0 to 9) of std_logic_vector(31 downto 0);
  
   type lut_color is  array (integer range 0 to 3) of unsigned (23 downto 0);
-  constant lutobj0 : lut_color := (x"ffffff", x"ff82ab", x"ab4e00", x"060002");
-  constant lutobj1 : lut_color := (x"ffffff", x"a3ff00", x"48a45d", x"060002");
+  constant lutobj0 : lut_color := (x"ffffff", x"FFA07A", x"ab4e00", x"060002");
+  constant lutobj1 : lut_color := (x"ffffff", x"800000", x"48a45d", x"060002"); --a3ff00
   constant lutbbp  : lut_color := (x"fffdea", x"8FBC8F", x"483D8B", x"060002");
   
   

@@ -47,7 +47,7 @@ variable counter : unsigned (16 downto 0);
 begin
     if rising_edge(clk25) then
 			
-			if col > 220 and col < 420 and  row> 432  then 
+			if col > 220 and col <=  420 and  row> 432  then 
 				-- blueofpixel <= data_rom(7 downto 0);
 				-- greenofpixel <= data_rom (15 downto 8);
 				-- redofpixel <= data_rom (23 downto 16);
@@ -96,7 +96,7 @@ begin
 --					addr_rom <= std_logic_vector (temp) ;
 --		  			end if; 
 		  
-	    end if;
+	     end if;
 		
 			if row = 0 then 
 				addr_rom <= "00000000000000";
