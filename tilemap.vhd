@@ -178,8 +178,7 @@ architecture bhv of tilemap is
 	signal cur_sprite : integer range -1 to 9;
 	signal nxt_sprite : integer range -1 to 9;
 	signal sprite_size : integer range  8 to 16;
-	shared variable color_on : integer := 1; 
-	 
+	
 begin
   xpos <= xpos_in/4;
   ypos <= ypos_in/3;

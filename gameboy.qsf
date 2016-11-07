@@ -161,8 +161,8 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_I2C_SDAT
 # GPIO
 #============================================================
 
-set_location_assignment PIN_AE16 -to v_sync
-set_location_assignment PIN_AF16 -to h_sync
+set_location_assignment PIN_AG17 -to v_sync
+set_location_assignment PIN_AK16 -to h_sync
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to v_sync
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to h_sync
 
@@ -176,6 +176,19 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to raspi_miso
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to raspi_sck
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to raspi_ss0
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to raspi_ss1
+
+set_location_assignment PIN_AJ16 -to pad_btn[0]
+set_location_assignment PIN_AH18 -to pad_btn[1]
+set_location_assignment PIN_AH17 -to pad_btn[2]
+set_location_assignment PIN_AG16 -to pad_btn[3]
+set_location_assignment PIN_AE16 -to pad_lane[0]
+set_location_assignment PIN_AF16 -to pad_lane[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to pad_btn[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to pad_btn[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to pad_btn[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to pad_btn[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to pad_lane[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to pad_lane[1]
 
 #============================================================
 # HEX0
@@ -821,7 +834,7 @@ set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to HPS_DDR3_CK_N
 #============================================================
 
 
-set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
+set_global_assignment -name LAST_QUARTUS_VERSION 16.0.0
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
@@ -835,8 +848,6 @@ set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_RO
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 
 
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
-set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 
 
 set_global_assignment -name QIP_FILE romport1.qip
@@ -857,6 +868,10 @@ set_global_assignment -name VHDL_FILE showspi.vhd
 
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+
+
+set_global_assignment -name HEX_FILE blag.hex
+set_global_assignment -name HEX_FILE blag3.hex
 
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

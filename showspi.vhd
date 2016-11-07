@@ -23,7 +23,9 @@ ENTITY showspi IS
     tdat_wr_dat : out std_logic_vector (7 downto 0);
     tdat_wr_addr : out std_logic_vector (12 downto 0); -- 2*256*16 8k bytes
 	tmap_wr_dat : out std_logic_vector (7 downto 0);
-    tmap_wr_addr : out std_logic_vector (10 downto 0) -- 2k
+    tmap_wr_addr : out std_logic_vector (10 downto 0); -- 2k
+	 rLY : in std_logic_vector(7 downto 0);
+	 pad_lane : out std_logic_vector (1 downto 0)
 	);
 END showspi;
 
@@ -54,28 +56,29 @@ ARCHITECTURE bhv OF showspi IS
 BEGIN
   process (raspi_sck, reset)
   	variable dword   : std_logic_vector (23 downto 0);
+  	variable rdaddr  : std_logic_vector (23 downto 0);
 	variable spidx   : integer range dword'low to dword'high;
 	variable part : std_logic_vector (15 downto 0); 
 	variable temp : unsigned (15 downto 0);
 	variable long_address : std_logic_vector (15 downto 0);
+	type rLY_sync_t is  array (integer range 0 to 3) of unsigned (7 downto 0);
+	variable rLY_sync : rLY_sync_t;
+	variable rLY_q    : unsigned (7 downto 0);
 	begin
-	   if reset = '0' or raspi_ss0 = '1' then
+	   if reset = '0' or (raspi_ss0 = '1' and raspi_ss1 = '1') then
 		  dword := (others=>'0');
+		  rdaddr := (others=>'0');
 		  spidx := 0;
-		elsif rising_edge(raspi_sck) and raspi_ss0 = '0'then
+		elsif rising_edge(raspi_sck) and raspi_ss0 = '0' then
 	     dword := dword(dword'high-1 downto 0) & raspi_mosi;
 		  if spidx = dword'high then
-		    dig0 <= hex2display(dword(3 downto 0));
-		    dig1 <= hex2display(dword(7 downto 4));
-		    dig2 <= hex2display(dword(11 downto 8));
-		    dig3 <= hex2display(dword(15 downto 12));
-		    dig4 <= hex2display(dword(19 downto 16));
-			 dig5 <= hex2display(dword(23 downto 20));
 			 spidx := 0;
 			 part := dword(23 downto 8);
 			 temp := unsigned(part);
-			 
-			if temp >= x"FE00" and temp<= x"FE9F" then 
+			
+		   if temp = x"FF00" then
+		      pad_lane <= not dword(5 downto 4);
+			elsif temp >= x"FE00" and temp<= x"FE9F" then
 				oam_wr_dat <= dword (7 downto 0);
 				--oam_wr_addr <=  std_logic_vector(to_unsigned(part), 8);
 				long_address := std_logic_vector(temp- x"fe00");
@@ -97,7 +100,22 @@ BEGIN
 		  else
 	       spidx := spidx+1;
 	     end if;
-		 
+		elsif rising_edge(raspi_sck) and raspi_ss1 = '0' then
+		  
+		  raspi_miso <= rLY_sync(0)(7-(spidx mod 8));
+        rdaddr := rdaddr(rdaddr'high-1 downto 0) & raspi_mosi;
+        rLY_sync := rLY_sync(1 to 3) & unsigned(rLY);
+		  if spidx = rdaddr'high then
+		    dig0 <= hex2display(std_logic_vector(rLY_sync(0)(3 downto 0)));
+		    dig1 <= hex2display(std_logic_vector(rLY_sync(0)(7 downto 4)));
+		    dig2 <= hex2display(rdaddr(11 downto 8));
+		    dig3 <= hex2display(rdaddr(15 downto 12));
+		    dig4 <= hex2display(rdaddr(19 downto 16));
+		    dig5 <= hex2display(rdaddr(23 downto 20));
+			 spidx := 0;
+		  else
+	       spidx := spidx+1;
+		  end if;
 		end if;
 	end process;
 END;

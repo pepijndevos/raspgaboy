@@ -23,8 +23,9 @@ entity gameboy is
 	    raspi_ss1   : in  STD_LOGIC;
        raspi_mosi  : in  STD_LOGIC;
        raspi_miso  : out STD_LOGIC;
-       raspi_sck   : in  STD_LOGIC
-		 
+       raspi_sck   : in  STD_LOGIC;
+		 pad_lane    : OUT std_logic_vector(1 DOWNTO 0);
+		 pad_btn     : IN std_logic_vector(3 DOWNTO 0)
 	   );
 end gameboy;
 
@@ -65,6 +66,8 @@ signal row     : integer range 0 to 1000;
 signal col     : integer range 0 to 1000;
 signal dispen  : std_logic;
 signal wren    : std_logic;
+
+signal rLY     : std_logic_vector(7 downto 0);
 
 -- memory modules
 component rom1 
@@ -213,7 +216,9 @@ COMPONENT showspi IS
     tdat_wr_dat : out std_logic_vector (7 downto 0);
     tdat_wr_addr : out std_logic_vector (12 downto 0); -- 2*256*16 8k bytes
 	tmap_wr_dat : out std_logic_vector (7 downto 0);
-    tmap_wr_addr : out std_logic_vector (10 downto 0)
+    tmap_wr_addr : out std_logic_vector (10 downto 0);
+	 rLY : in std_logic_vector(7 downto 0);
+	 pad_lane : out std_logic_vector (1 downto 0)
 	 );-- 2k
 END COMPONENT;
 
@@ -228,10 +233,12 @@ wren <= not raspi_ss0;
 h_sync <= '1' when col > 460 and row/3 /= (row+1)/3 else '0';
 v_sync <= '1' when row > 432 else '0';
 
+LEDR(3 downto 0) <= pad_btn;
+
 process (clk25)  
 begin  
   if rising_edge(clk25) then
-	
+      rLY <= std_logic_vector(to_unsigned(row/3, 8));
 		if dispen='1' then
 
 			--here you paint!!
@@ -340,8 +347,10 @@ showspi_inst : showspi PORT MAP (
 		tdat_wr_dat => tdat_wr_dat,
 		tdat_wr_addr => tdat_wr_addr,
 		tmap_wr_dat => tmap_wr_dat,
-		tmap_wr_addr => tmap_wr_addr
-	);
+		tmap_wr_addr => tmap_wr_addr,
+		rLY => rLY,
+		pad_lane => pad_lane
+);
 	
 tilemapram_inst : tilemapram PORT MAP (
 		data	 => tmap_wr_dat,
