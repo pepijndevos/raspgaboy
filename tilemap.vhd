@@ -25,7 +25,7 @@ entity tilemap is
 
 		 xpos_in    : in integer range 0 to 1000;
 		 ypos_in    : in integer range 0 to 1000;
-		 pixel   : out std_logic_vector(1 downto 0)
+		 pixel   : out std_logic_vector(23 downto 0)
 		 );
 end tilemap;
 
@@ -33,6 +33,18 @@ architecture bhv of tilemap is
   type pixel_t is (BLANK, BG, WINDOW);
   type addrmux_t is (SPRITESEL, TILESEL);
   type sprite_t is array(0 to 9) of std_logic_vector(31 downto 0);
+ 
+  
+  type lut_color_obj0 is array (integer range 0 to 2) of unsigned (23 downto 0);
+  constant lutobj0 : lut_color_obj0 := (x"ff82ab",  x"ab4e00" ,  x"060002");
+
+  type lut_color_obj1 is array (integer range 0 to 2) of unsigned (23 downto 0);
+  constant lutobj1 : lut_color_obj1 := (x"a3ff00",  x"48a45d",  x"060002");
+
+  type lut_color_bbp is  array (integer range 0 to 3) of unsigned (23 downto 0);
+  constant lutbbp : lut_color_bbp := (x"fffdea",  x"00c585",   x"0900ff",  x"060002");
+  
+  
   FUNCTION tile_nr_addr (xpos:integer; ypos:integer; tilemap:std_logic) RETURN unsigned IS
     variable tilex : integer; 
 	 variable tiley : integer;
@@ -83,8 +95,7 @@ architecture bhv of tilemap is
 	 return -1; -- where is my option type
   END get_current_sprite;
 
-  FUNCTION get_palette_color (pixel_tmp:std_logic_vector(1 downto 0); palette_type:std_logic_vector(7 downto 0)) RETURN std_logic_vector IS
-  
+  FUNCTION get_palette_color (pixel_tmp:std_logic_vector(1 downto 0); palette_type:std_logic_vector(7 downto 0) ) RETURN std_logic_vector IS
   BEGIN
 	case pixel_tmp is
 	when "00" => RETURN palette_type(1 downto 0);
@@ -94,7 +105,37 @@ architecture bhv of tilemap is
 	when others => RETURN "00";    -- also the case for when "00" because lower two bits are not used (transparent)
 	END CASE; 
   end get_palette_color;
-
+  
+   FUNCTION get_palette_color_colorobj0 (pixel_tmp:std_logic_vector(1 downto 0); palette_type: lut_color_obj0 ) RETURN unsigned IS
+  BEGIN
+	case pixel_tmp is
+	when "01" => RETURN palette_type(0);
+	when "10" => RETURN palette_type(1);
+	when "11" => RETURN palette_type(2);	
+	when others => RETURN "000000000000000000000000";    -- also the case for when "00" because lower two bits are not used (transparent)
+	END CASE; 
+  end get_palette_color_colorobj0;
+  
+   FUNCTION get_palette_color_colorobj1 (pixel_tmp:std_logic_vector(1 downto 0); palette_type: lut_color_obj1 ) RETURN unsigned IS
+  BEGIN
+	case pixel_tmp is
+	when "01" => RETURN palette_type(0);
+	when "10" => RETURN palette_type(1);
+	when "11" => RETURN palette_type(2);	
+	when others => RETURN "000000000000000000000000";    -- also the case for when "00" because lower two bits are not used (transparent)
+	END CASE; 
+  end get_palette_color_colorobj1;
+  
+   FUNCTION get_palette_color_colorbbp (pixel_tmp:std_logic_vector(1 downto 0); palette_type:lut_color_bbp ) RETURN unsigned IS
+  BEGIN
+	case pixel_tmp is
+   when "00" => RETURN palette_type(0);
+	when "01" => RETURN palette_type(1);
+	when "10" => RETURN palette_type(2);
+	when "11" => RETURN palette_type(3);	
+	when others => RETURN "000000000000000000000000";    -- also the case for when "00" because lower two bits are not used (transparent)
+	END CASE; 
+  end get_palette_color_colorbbp;
 
  
 --  Bit 7 - LCD Display Enable             (0=Off, 1=On)
@@ -158,6 +199,8 @@ architecture bhv of tilemap is
 	signal cur_sprite : integer range -1 to 9;
 	signal nxt_sprite : integer range -1 to 9;
 	signal sprite_size : integer range  8 to 16;
+	shared variable color_on : integer := 1; 
+	 
 begin
   xpos <= xpos_in/4;
   ypos <= ypos_in/3;
@@ -249,6 +292,7 @@ begin
 process (clk, rst)
 variable sprite_counter : integer range 0 to 9;
 variable pixel_tmp : std_logic_vector (1 downto 0);
+
 begin
   if(rst = '0') then
 	 LCDC <= (others => '0');
@@ -267,23 +311,24 @@ begin
 		end if;
 	   if cur_sprite /= -1 and pixel_tmp /= "00" then
 			--if spf(4) = '0' then 
-			if sprite_lst(cur_sprite)(28) = '0' then 
-		  pixel <= not get_palette_color(pixel_tmp,obp0);
+			if sprite_lst(cur_sprite)(28) = '0' then
+					pixel <=  std_logic_vector(get_palette_color_colorobj0(pixel_tmp,lutobj0));
 		   else 
-		  pixel <= not get_palette_color(pixel_tmp,obp1);
+					pixel <=  std_logic_vector(get_palette_color_colorobj1(pixel_tmp,lutobj1));
+					--pixel <= not get_palette_color(pixel_tmp,obp1);
 		  end if;
 		else
 	     case cur_type is
           when BG =>
-		      pixel <= not   get_palette_color((tile(15-tilecol) & tile(7-tilecol)),bbp);
+					pixel <=  std_logic_vector(get_palette_color_colorbbp((tile(15-tilecol) & tile(7-tilecol)),lutbbp));
           when WINDOW =>
-		      pixel <= not   get_palette_color((tile(15-windcol) & tile(7-windcol)),bbp);
+					pixel <=  std_logic_vector(get_palette_color_colorbbp((tile(15-windcol) & tile(7-windcol)),lutbbp));
           when BLANK =>
-		      pixel <= "11";
+		      pixel <= "000000000000000000000011";
         end case;
 		end if;
 	 else
-	   pixel <= "10";
+	   pixel <= "000000000000000000000010";
 	 end if;
 
 	 if ypos >= yoffset and ypos < yoffset+screen_height then

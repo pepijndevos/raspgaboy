@@ -60,7 +60,7 @@ signal tmap_rd_addr : std_logic_vector (10 downto 0); -- 2*32*32 2k
 signal tmap_wr_dat : std_logic_vector (7 downto 0);
 signal tmap_wr_addr : std_logic_vector (10 downto 0); -- 2k
 
-signal pixel : std_logic_vector (1 downto 0);
+signal pixel : std_logic_vector (23 downto 0);
 signal row     : integer range 0 to 1000;
 signal col     : integer range 0 to 1000;
 signal dispen  : std_logic;
@@ -191,7 +191,7 @@ COMPONENT tilemap is
 		 
 		 xpos_in    : in integer range 0 to 1000;
 		 ypos_in    : in integer range 0 to 1000;
-		 pixel   : out std_logic_vector(1 downto 0)
+		 pixel   : out std_logic_vector(23 downto 0)
 		 );
 END COMPONENT;
 
@@ -237,9 +237,9 @@ begin
 			--here you paint!!
 			if row <= 432 then 
 
-				VGA_R <= pixel & pixel & pixel & pixel;
-				VGA_G <= pixel & pixel & pixel & pixel;
-				VGA_B <= pixel & pixel & pixel & pixel;
+				VGA_R <= pixel(23 downto 16);
+				VGA_G <= pixel(15 downto 8);
+				VGA_B <= pixel(7 downto 0);
 			else
 				VGA_R <= redofpixel;
 				VGA_G <= greenofpixel;
