@@ -68,7 +68,7 @@ signal col     : integer range 0 to 1000;
 signal dispen  : std_logic;
 signal wren    : std_logic;
 
-signal rLY     : std_logic_vector(7 downto 0);
+signal rLY     : std_logic_vector(15 downto 0);
 
 -- memory modules
 component rom1 
@@ -219,7 +219,7 @@ COMPONENT showspi IS
     tdat_wr_addr : out std_logic_vector (12 downto 0); -- 2*256*16 8k bytes
 	tmap_wr_dat : out std_logic_vector (7 downto 0);
     tmap_wr_addr : out std_logic_vector (10 downto 0);
-	 rLY : in std_logic_vector(7 downto 0);
+	 rLY : in std_logic_vector(15 downto 0);
 	 pad_lane : out std_logic_vector (1 downto 0)
 	 );-- 2k
 END COMPONENT;
@@ -240,7 +240,7 @@ LEDR(3 downto 0) <= pad_btn;
 process (clk25)  
 begin  
   if rising_edge(clk25) then
-      rLY <= std_logic_vector(to_unsigned(row/3, 8));
+      rLY <= std_logic_vector(to_unsigned(row, 16));
 		if dispen='1' then
 
 			--here you paint!!
