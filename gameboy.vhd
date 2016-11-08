@@ -69,6 +69,9 @@ signal dispen  : std_logic;
 signal wren    : std_logic;
 
 signal rLY     : std_logic_vector(7 downto 0);
+signal sel     : std_logic_vector (1 downto 0); 
+signal choosebtn : std_logic_vector (3 downto 0);
+signal buttons : std_logic_vector ( 7 downto 0); 
 
 -- memory modules
 component rom1 
@@ -81,7 +84,9 @@ component rom1
 		redofpixel : out std_logic_vector(7 downto 0);
 		greenofpixel : out std_logic_vector(7 downto 0);
 		blueofpixel : out std_logic_vector(7 downto 0);
-		blackofpixel : out std_logic
+		blackofpixel : out std_logic;
+		
+		buttons : in std_logic_vector (7 downto 0)
 	);
 end component;
 
@@ -234,13 +239,20 @@ wren <= not raspi_ss0;
 
 h_sync <= '1' when col > 460 and row/3 /= (row+1)/3 else '0';
 v_sync <= '1' when row > 432 else '0';
-
+pad_lane <= sel;
 LEDR(3 downto 0) <= pad_btn;
+ledr(5 downto 4) <= sel;
 
 process (clk25)  
 begin  
   if rising_edge(clk25) then
       rLY <= std_logic_vector(to_unsigned(row/3, 8));
+		if sel(0) = '1' then 
+		  buttons(3 downto 0) <= pad_btn;
+		elsif sel(1) = '1' then
+			 buttons(7 downto 4) <= pad_btn;
+		end if; 
+	
 		if dispen='1' then
 
 			--here you paint!!
@@ -248,8 +260,38 @@ begin
 				VGA_R <= pixel(23 downto 16);
 				VGA_G <= pixel(15 downto 8);
 				VGA_B <= pixel(7 downto 0);
-			else
 				
+--			else if (row>440 and row < 450 and col> 100 and col< 110) or   --up button
+--			(row>450 and row < 460 and col > 90 and col < 100) or    -- left button
+--			(row>460 and row<470 and col>100 and col<110) or       -- down button
+--			(row>450 and row<460 and col>110 and col<120)    -- right button
+--			or (row>450 and row < 460 and col> 440 and col< 450) or  -- b button
+--			(row>440 and row < 450 and col> 450 and col< 460) or --  a button
+--			(row>468 and row<474 and col>127 and col<145) or  -- select
+--			(row>475 and row<480 and col>150 and col<168)     --  start
+--			then 
+--			
+--			
+--					if (sel = "1110" and pad_btn = "10" and (row>450 and row<460 and col>110 and col<120)) or 
+--						(sel = "1011" and pad_btn = "10" and row>440 and row < 450 and col> 100 and col< 110) or   --up button
+--						(sel = "1101" and pad_btn = "10" and row>450 and row < 460 and col > 90 and col < 100) or    -- left button
+--						(sel = "0111" and pad_btn = "10" and row>460 and row<470 and col>100 and col<110) or       -- down button	
+--						(sel = "1101" and pad_btn = "01" and row>450 and row < 460 and col> 440 and col< 450) or  -- b button
+--						(sel = "1110" and pad_btn = "01" and row>440 and row < 450 and col> 450 and col< 460) or --  a button
+--						(sel = "1011" and pad_btn = "01" and row>468 and row<474 and col>127 and col<145) or  -- select
+--						(sel = "0111" and pad_btn = "01" and row>475 and row<480 and col>150 and col<168)     --  start
+--					then
+--						VGA_R <= "11111111";
+--						VGA_G <= "00000000";
+--						VGA_B <= "00000000";
+--					else 
+--					
+--						VGA_R <= "00000000";
+--						VGA_G <= "00000000";
+--						VGA_B <= "11111111";
+--					end if; 
+--					
+		   else 
 				VGA_R <= redofpixel;
 				VGA_G <= greenofpixel;
 				VGA_B <= blueofpixel;
@@ -273,7 +315,8 @@ rom1_inst : rom1 PORT MAP (
 		redofpixel => redofpixel,
 		greenofpixel => greenofpixel,
 		blueofpixel => blueofpixel,
-		blackofpixel => blackofpixel
+		blackofpixel => blackofpixel,
+	   buttons => buttons
 );
 
 pll_inst : pll PORT MAP (
@@ -352,7 +395,7 @@ showspi_inst : showspi PORT MAP (
 		tmap_wr_dat => tmap_wr_dat,
 		tmap_wr_addr => tmap_wr_addr,
 		rLY => rLY,
-		pad_lane => pad_lane
+		pad_lane => sel
 );
 	
 tilemapram_inst : tilemapram PORT MAP (
